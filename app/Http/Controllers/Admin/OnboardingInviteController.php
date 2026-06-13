@@ -185,4 +185,81 @@ class OnboardingInviteController extends Controller
             'completionPercent' => $completionPercent,
         ]);
     }
+
+    public function exportSubmissionsCsv()
+    {
+        $fileName = 'onboarding-submissions-' . now()->format('Y-m-d-His') . '.csv';
+
+        ActivityLog::create([
+            'actor_name' => 'Admin User',
+            'action' => 'csv_exported',
+            'description' => 'Onboarding submissions CSV exported.',
+        ]);
+
+        $invites = OnboardingInvite::with([
+            'submission',
+            'missingInfoItems',
+        ])
+            ->latest()
+            ->get();
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$fileName}\"",
+        ];
+
+        $callback = function () use ($invites) {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, [
+                'Invite ID',
+                'Recipient Name',
+                'Recipient Email',
+                'Invite Organisation',
+                'Invite Role',
+                'Status',
+                'Missing Info Count',
+                'Submitted At',
+                'Submission First Name',
+                'Submission Last Name',
+                'Submission Email',
+                'Submission Phone',
+                'Submission Organisation',
+                'Submission Role',
+                'Emergency Contact Name',
+                'Emergency Contact Phone',
+                'Applicant Notes',
+                'Invite Created At',
+            ]);
+
+            foreach ($invites as $invite) {
+                $submission = $invite->submission;
+
+                fputcsv($handle, [
+                    $invite->id,
+                    $invite->recipient_name,
+                    $invite->recipient_email,
+                    $invite->organisation,
+                    $invite->role,
+                    $invite->statusLabel(),
+                    $invite->missingInfoItems->where('resolved', false)->count(),
+                    optional($invite->submitted_at)->format('Y-m-d H:i:s'),
+                    $submission?->first_name,
+                    $submission?->last_name,
+                    $submission?->email,
+                    $submission?->phone,
+                    $submission?->organisation,
+                    $submission?->role,
+                    $submission?->emergency_contact_name,
+                    $submission?->emergency_contact_phone,
+                    $submission?->notes,
+                    optional($invite->created_at)->format('Y-m-d H:i:s'),
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

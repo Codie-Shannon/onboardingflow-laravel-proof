@@ -13,7 +13,8 @@
     <p>
         <a href="{{ route('admin.onboarding.invites.create') }}">Create Invite</a> |
         <a href="{{ route('admin.onboarding.invites.index') }}">View Invites</a> |
-        <a href="{{ route('admin.onboarding.activity-log.index') }}">Activity Log</a>
+        <a href="{{ route('admin.onboarding.activity-log.index') }}">Activity Log</a> |
+        <a href="{{ route('admin.onboarding.exports.submissions') }}">Export Submissions CSV</a>
     </p>
 
     <h2>Metrics</h2>

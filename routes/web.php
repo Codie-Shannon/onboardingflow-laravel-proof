@@ -33,6 +33,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/activity-log', [OnboardingInviteController::class, 'activityLog'])
             ->name('activity-log.index');
+
+        Route::get('/exports/submissions.csv', [OnboardingInviteController::class, 'exportSubmissionsCsv'])
+            ->name('exports.submissions');
     });
 });
 
