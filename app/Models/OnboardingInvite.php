@@ -22,4 +22,9 @@ class OnboardingInvite extends Model
         'expires_at' => 'datetime',
         'submitted_at' => 'datetime',
     ];
+
+    public function submission()
+    {
+        return $this->hasOne(OnboardingSubmission::class);
+    }
 }

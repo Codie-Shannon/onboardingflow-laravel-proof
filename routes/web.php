@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\OnboardingInviteController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PublicOnboardingFormController;
 
 Route::get('/', function () {
     return redirect()->route('admin.onboarding.invites.index');
@@ -17,6 +18,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 // Placeholder route. We build the real public form next.
-Route::get('/onboarding/{token}', function (string $token) {
-    return "Public onboarding form placeholder for token: " . $token;
-})->name('public.onboarding.show');
+Route::get('/onboarding/{token}', [PublicOnboardingFormController::class, 'show'])
+    ->name('public.onboarding.show');
+
+Route::post('/onboarding/{token}', [PublicOnboardingFormController::class, 'store'])
+    ->name('public.onboarding.store');
