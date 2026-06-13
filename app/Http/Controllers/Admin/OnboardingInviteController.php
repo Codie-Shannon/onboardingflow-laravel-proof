@@ -123,4 +123,15 @@ class OnboardingInviteController extends Controller
             ->route('admin.onboarding.invites.show', $invite)
             ->with('success', 'Note added.');
     }
+
+    public function activityLog()
+    {
+        $activityLogs = ActivityLog::with('invite')
+            ->latest()
+            ->paginate(20);
+
+        return view('admin.onboarding.activity-log.index', [
+            'activityLogs' => $activityLogs,
+        ]);
+    }
 }

@@ -27,6 +27,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::post('/invites/{invite}/notes', [OnboardingInviteController::class, 'storeNote'])
             ->name('invites.notes.store');
+
+        Route::get('/activity-log', [OnboardingInviteController::class, 'activityLog'])
+            ->name('activity-log.index');
     });
 });
 
