@@ -38,6 +38,31 @@
         <button type="submit">Update Status</button>
     </form>
 
+    @if ($invite->missingInfoItems->count() > 0)
+        <h3>Missing Information</h3>
+
+        <table border="1" cellpadding="8">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Description</th>
+                    <th>Severity</th>
+                    <th>Resolved</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($invite->missingInfoItems as $item)
+                    <tr>
+                        <td>{{ $item->label }}</td>
+                        <td>{{ $item->description }}</td>
+                        <td>{{ ucfirst($item->severity) }}</td>
+                        <td>{{ $item->resolved ? 'Yes' : 'No' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
+
     <p><strong>Expires:</strong> {{ optional($invite->expires_at)->format('d M Y H:i') ?? '-' }}</p>
 
     <h3>Public Onboarding Link</h3>

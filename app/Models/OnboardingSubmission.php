@@ -28,4 +28,9 @@ class OnboardingSubmission extends Model
     {
         return $this->belongsTo(OnboardingInvite::class, 'onboarding_invite_id');
     }
+
+    public function missingInfoItems()
+    {
+        return $this->hasMany(MissingInfoItem::class);
+    }
 }

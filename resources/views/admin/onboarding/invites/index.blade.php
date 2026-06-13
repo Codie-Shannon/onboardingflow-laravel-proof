@@ -22,6 +22,7 @@
                 <th>Organisation</th>
                 <th>Role</th>
                 <th>Status</th>
+                <th>Missing Info</th>
                 <th>Expires</th>
                 <th>Created</th>
                 <th></th>
@@ -35,6 +36,7 @@
                     <td>{{ $invite->organisation ?? '-' }}</td>
                     <td>{{ $invite->role ?? '-' }}</td>
                     <td>{{ $invite->statusLabel() }}</td>
+                    <td>{{ $invite->unresolved_missing_info_items_count }}</td>
                     <td>{{ optional($invite->expires_at)->format('d M Y') ?? '-' }}</td>
                     <td>{{ $invite->created_at->format('d M Y H:i') }}</td>
                     <td>
@@ -43,7 +45,7 @@
                 </tr>
             @empty
                 <tr>
-                    <td colspan="8">No invites yet.</td>
+                    <td colspan="9">No invites yet.</td>
                 </tr>
             @endforelse
         </tbody>

@@ -46,4 +46,14 @@ class OnboardingInvite extends Model
     {
         return self::statuses()[$this->status] ?? ucfirst(str_replace('_', ' ', $this->status));
     }
+
+    public function missingInfoItems()
+    {
+        return $this->hasMany(MissingInfoItem::class);
+    }
+
+    public function unresolvedMissingInfoItems()
+    {
+        return $this->hasMany(MissingInfoItem::class)->where('resolved', false);
+    }
 }

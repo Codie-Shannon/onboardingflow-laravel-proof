@@ -11,8 +11,12 @@ class OnboardingInviteController extends Controller
 {
     public function index()
     {
-        $invites = OnboardingInvite::latest()->paginate(10);
-
+        $invites = OnboardingInvite::withCount([
+            'unresolvedMissingInfoItems',
+        ])
+            ->latest()
+            ->paginate(10);
+    
         return view('admin.onboarding.invites.index', [
             'invites' => $invites,
         ]);
@@ -47,6 +51,8 @@ class OnboardingInviteController extends Controller
 
     public function show(OnboardingInvite $invite)
     {
+        $invite->load(['submission', 'missingInfoItems']);
+    
         $publicUrl = route('public.onboarding.show', $invite->token);
     
         return view('admin.onboarding.invites.show', [
