@@ -11,12 +11,11 @@
     @endif
 
     <p>
-        <a href="{{ route('admin.onboarding.invites.create') }}">Create Invite</a>
+        <a href="{{ route('admin.onboarding.dashboard') }}">Dashboard</a> |
+        <a href="{{ route('admin.onboarding.invites.create') }}">Create Invite</a> |
+        <a href="{{ route('admin.onboarding.activity-log.index') }}">Activity Log</a>
     </p>
 
-    <p>
-        <a href="{{ route('admin.onboarding.activity-log.index') }}">View Activity Log</a>
-    </p>
     <table border="1" cellpadding="8">
         <thead>
             <tr>

@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
+use App\Models\MissingInfoItem;
 use App\Models\OnboardingInvite;
+use App\Models\OnboardingNote;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use App\Models\ActivityLog;
-use App\Models\OnboardingNote;
 
 class OnboardingInviteController extends Controller
 {
@@ -132,6 +133,56 @@ class OnboardingInviteController extends Controller
 
         return view('admin.onboarding.activity-log.index', [
             'activityLogs' => $activityLogs,
+        ]);
+    }
+
+    public function dashboard()
+    {
+        $totalInvites = OnboardingInvite::count();
+        $submitted = OnboardingInvite::whereNotNull('submitted_at')->count();
+        $inReview = OnboardingInvite::where('status', 'in_review')->count();
+        $needsInfo = OnboardingInvite::where('status', 'needs_info')->count();
+        $approved = OnboardingInvite::where('status', 'approved')->count();
+
+        $recentInvites = OnboardingInvite::withCount([
+            'unresolvedMissingInfoItems',
+        ])
+            ->latest()
+            ->take(8)
+            ->get();
+
+        $reviewQueue = OnboardingInvite::with(['submission'])
+            ->whereIn('status', ['submitted', 'in_review', 'needs_info'])
+            ->latest()
+            ->take(6)
+            ->get();
+
+        $missingInfoItems = MissingInfoItem::with(['invite', 'submission'])
+            ->where('resolved', false)
+            ->latest()
+            ->take(8)
+            ->get();
+
+        $recentActivity = ActivityLog::with('invite')
+            ->latest()
+            ->take(8)
+            ->get();
+
+        $completionPercent = $totalInvites > 0
+            ? round(($approved / $totalInvites) * 100)
+            : 0;
+
+        return view('admin.onboarding.dashboard', [
+            'totalInvites' => $totalInvites,
+            'submitted' => $submitted,
+            'inReview' => $inReview,
+            'needsInfo' => $needsInfo,
+            'approved' => $approved,
+            'recentInvites' => $recentInvites,
+            'reviewQueue' => $reviewQueue,
+            'missingInfoItems' => $missingInfoItems,
+            'recentActivity' => $recentActivity,
+            'completionPercent' => $completionPercent,
         ]);
     }
 }

@@ -7,7 +7,8 @@
     <h1>Activity Log</h1>
 
     <p>
-        <a href="{{ route('admin.onboarding.invites.index') }}">Back to invites</a>
+        <a href="{{ route('admin.onboarding.dashboard') }}">Dashboard</a> |
+        <a href="{{ route('admin.onboarding.invites.index') }}">View invites</a>
     </p>
 
     <table border="1" cellpadding="8">

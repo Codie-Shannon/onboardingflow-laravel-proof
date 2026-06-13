@@ -7,7 +7,9 @@
     <h1>Create Onboarding Invite</h1>
 
     <p>
-        <a href="{{ route('admin.onboarding.invites.index') }}">Back to invites</a>
+        <a href="{{ route('admin.onboarding.dashboard') }}">Dashboard</a> |
+        <a href="{{ route('admin.onboarding.invites.index') }}">Back to invites</a> |
+        <a href="{{ route('admin.onboarding.activity-log.index') }}">Activity Log</a>
     </p>
 
     @if ($errors->any())

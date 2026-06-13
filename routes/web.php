@@ -5,11 +5,14 @@ use App\Http\Controllers\PublicOnboardingFormController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect()->route('admin.onboarding.invites.index');
+    return redirect()->route('admin.onboarding.dashboard');
 });
 
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::prefix('onboarding')->name('onboarding.')->group(function () {
+        Route::get('/dashboard', [OnboardingInviteController::class, 'dashboard'])
+            ->name('dashboard');
+
         Route::get('/invites', [OnboardingInviteController::class, 'index'])
             ->name('invites.index');
 
