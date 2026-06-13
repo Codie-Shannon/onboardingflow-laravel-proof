@@ -20,6 +20,24 @@
                 @csrf
 
                 <div>
+                    <label class="block text-sm font-semibold text-slate-700">Onboarding Template</label>
+                    <select name="onboarding_template_id"
+                            class="mt-2 w-full rounded-xl border border-slate-300 px-4 py-3 text-sm focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-100">
+                        <option value="">No template selected</option>
+
+                        @foreach ($templates as $template)
+                            <option value="{{ $template->id }}" @selected(old('onboarding_template_id') == $template->id)>
+                                {{ $template->name }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    <p class="mt-1 text-xs text-slate-500">
+                        Choose the onboarding template that matches this invite.
+                    </p>
+                </div>
+
+                <div>
                     <label class="block text-sm font-semibold text-slate-700">Recipient Name</label>
                     <input type="text"
                            name="recipient_name"
@@ -85,6 +103,14 @@
                     <div class="flex gap-3">
                         <div class="mt-1 w-2 h-2 rounded-full bg-teal-700"></div>
                         <div>
+                            <div class="text-sm font-semibold">Choose template</div>
+                            <div class="text-sm text-slate-500">Select the onboarding type for this invite.</div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div class="mt-1 w-2 h-2 rounded-full bg-teal-700"></div>
+                        <div>
                             <div class="text-sm font-semibold">Create invite</div>
                             <div class="text-sm text-slate-500">Admin enters basic recipient details.</div>
                         </div>
@@ -95,14 +121,6 @@
                         <div>
                             <div class="text-sm font-semibold">Generate link</div>
                             <div class="text-sm text-slate-500">System creates a unique public onboarding URL.</div>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-3">
-                        <div class="mt-1 w-2 h-2 rounded-full bg-teal-700"></div>
-                        <div>
-                            <div class="text-sm font-semibold">Submit form</div>
-                            <div class="text-sm text-slate-500">Applicant fills out the web form instead of returning a PDF.</div>
                         </div>
                     </div>
 

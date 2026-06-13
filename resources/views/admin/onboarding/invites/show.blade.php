@@ -25,6 +25,20 @@
 
                 <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
+                        <div class="text-slate-500">Template</div>
+                        <div class="font-medium text-slate-900">
+                            @if ($invite->template)
+                                <a href="{{ route('admin.onboarding.templates.show', $invite->template) }}"
+                                   class="text-teal-800 hover:text-teal-950">
+                                    {{ $invite->template->name }}
+                                </a>
+                            @else
+                                -
+                            @endif
+                        </div>
+                    </div>
+
+                    <div>
                         <div class="text-slate-500">Organisation</div>
                         <div class="font-medium text-slate-900">{{ $invite->organisation ?? '-' }}</div>
                     </div>

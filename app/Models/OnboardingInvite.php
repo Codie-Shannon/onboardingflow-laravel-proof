@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class OnboardingInvite extends Model
 {
     protected $fillable = [
+        'onboarding_template_id',
         'recipient_name',
         'recipient_email',
         'role',
@@ -22,11 +23,6 @@ class OnboardingInvite extends Model
         'expires_at' => 'datetime',
         'submitted_at' => 'datetime',
     ];
-
-    public function submission()
-    {
-        return $this->hasOne(OnboardingSubmission::class);
-    }
 
     public static function statuses(): array
     {
@@ -45,6 +41,16 @@ class OnboardingInvite extends Model
     public function statusLabel(): string
     {
         return self::statuses()[$this->status] ?? ucfirst(str_replace('_', ' ', $this->status));
+    }
+
+    public function template()
+    {
+        return $this->belongsTo(OnboardingTemplate::class, 'onboarding_template_id');
+    }
+
+    public function submission()
+    {
+        return $this->hasOne(OnboardingSubmission::class);
     }
 
     public function missingInfoItems()

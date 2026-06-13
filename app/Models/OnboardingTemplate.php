@@ -22,4 +22,9 @@ class OnboardingTemplate extends Model
         'review_checklist' => 'array',
         'is_active' => 'boolean',
     ];
+
+    public function invites()
+    {
+        return $this->hasMany(OnboardingInvite::class, 'onboarding_template_id');
+    }
 }

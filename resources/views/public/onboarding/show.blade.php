@@ -135,6 +135,13 @@
                         <div class="font-medium text-slate-900">{{ $invite->recipient_name }}</div>
                     </div>
 
+                    @if ($invite->template)
+                        <div>
+                            <div class="text-slate-500">Template</div>
+                            <div class="font-medium text-slate-900">{{ $invite->template->name }}</div>
+                        </div>
+                    @endif
+
                     <div>
                         <div class="text-slate-500">Organisation</div>
                         <div class="font-medium text-slate-900">{{ $invite->organisation ?? '-' }}</div>

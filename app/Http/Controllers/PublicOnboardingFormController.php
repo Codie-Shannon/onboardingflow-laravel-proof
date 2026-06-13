@@ -2,16 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ActivityLog;
+use App\Models\MissingInfoItem;
 use App\Models\OnboardingInvite;
 use App\Models\OnboardingSubmission;
 use Illuminate\Http\Request;
-use App\Models\MissingInfoItem;
 
 class PublicOnboardingFormController extends Controller
 {
     public function show(string $token)
     {
-        $invite = OnboardingInvite::where('token', $token)->firstOrFail();
+        $invite = OnboardingInvite::with(['template', 'submission'])
+            ->where('token', $token)
+            ->firstOrFail();
 
         if ($invite->expires_at && $invite->expires_at->isPast()) {
             return view('public.onboarding.expired', [
@@ -32,7 +35,9 @@ class PublicOnboardingFormController extends Controller
 
     public function store(Request $request, string $token)
     {
-        $invite = OnboardingInvite::where('token', $token)->firstOrFail();
+        $invite = OnboardingInvite::with(['template', 'submission'])
+            ->where('token', $token)
+            ->firstOrFail();
 
         if ($invite->expires_at && $invite->expires_at->isPast()) {
             return view('public.onboarding.expired', [
@@ -59,83 +64,96 @@ class PublicOnboardingFormController extends Controller
         ]);
 
         $submission = OnboardingSubmission::create([
-            ...$validated,
             'onboarding_invite_id' => $invite->id,
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'] ?? null,
+            'organisation' => $validated['organisation'] ?? null,
+            'role' => $validated['role'] ?? null,
+            'emergency_contact_name' => $validated['emergency_contact_name'] ?? null,
+            'emergency_contact_phone' => $validated['emergency_contact_phone'] ?? null,
+            'notes' => $validated['notes'] ?? null,
             'raw_payload' => $validated,
         ]);
-        
-        $missingItems = $this->detectMissingInfo($invite, $submission, $validated);
-        
+
+        $missingItems = $this->detectMissingInfo($invite, $submission);
+
         foreach ($missingItems as $item) {
             MissingInfoItem::create([
                 'onboarding_invite_id' => $invite->id,
                 'onboarding_submission_id' => $submission->id,
-                'field_key' => $item['field_key'],
+                'field_name' => $item['field_name'],
                 'label' => $item['label'],
                 'description' => $item['description'],
                 'severity' => $item['severity'],
+                'resolved' => false,
             ]);
         }
-        
+
         $invite->update([
             'status' => count($missingItems) > 0 ? 'needs_info' : 'submitted',
             'submitted_at' => now(),
         ]);
 
+        ActivityLog::create([
+            'onboarding_invite_id' => $invite->id,
+            'actor_name' => $submission->first_name . ' ' . $submission->last_name,
+            'action' => 'form_submitted',
+            'description' => count($missingItems) > 0
+                ? 'Public onboarding form submitted with missing information.'
+                : 'Public onboarding form submitted.',
+        ]);
+
         return view('public.onboarding.thank-you', [
             'invite' => $invite,
+            'submission' => $submission,
         ]);
     }
 
-    private function detectMissingInfo(OnboardingInvite $invite, OnboardingSubmission $submission, array $validated): array
+    private function detectMissingInfo(OnboardingInvite $invite, OnboardingSubmission $submission): array
     {
+        $missing = [];
+
         $checks = [
-            [
-                'field_key' => 'phone',
-                'label' => 'Phone number missing',
-                'description' => 'The applicant did not provide a phone number.',
-                'severity' => 'warning',
-                'value' => $validated['phone'] ?? null,
+            'phone' => [
+                'label' => 'Phone',
+                'description' => 'Phone number was not provided.',
+                'severity' => 'medium',
             ],
-            [
-                'field_key' => 'organisation',
-                'label' => 'Organisation missing',
-                'description' => 'The applicant did not provide an organisation.',
-                'severity' => 'warning',
-                'value' => $validated['organisation'] ?? null,
+            'organisation' => [
+                'label' => 'Organisation',
+                'description' => 'Organisation was not provided.',
+                'severity' => 'medium',
             ],
-            [
-                'field_key' => 'role',
-                'label' => 'Role / position missing',
-                'description' => 'The applicant did not provide their role or position.',
-                'severity' => 'warning',
-                'value' => $validated['role'] ?? null,
+            'role' => [
+                'label' => 'Role / Position',
+                'description' => 'Role or position was not provided.',
+                'severity' => 'medium',
             ],
-            [
-                'field_key' => 'emergency_contact_name',
-                'label' => 'Emergency contact name missing',
-                'description' => 'The applicant did not provide an emergency contact name.',
-                'severity' => 'important',
-                'value' => $validated['emergency_contact_name'] ?? null,
+            'emergency_contact_name' => [
+                'label' => 'Emergency Contact Name',
+                'description' => 'Emergency contact name was not provided.',
+                'severity' => 'high',
             ],
-            [
-                'field_key' => 'emergency_contact_phone',
-                'label' => 'Emergency contact phone missing',
-                'description' => 'The applicant did not provide an emergency contact phone number.',
-                'severity' => 'important',
-                'value' => $validated['emergency_contact_phone'] ?? null,
+            'emergency_contact_phone' => [
+                'label' => 'Emergency Contact Phone',
+                'description' => 'Emergency contact phone was not provided.',
+                'severity' => 'high',
             ],
         ];
 
-        return collect($checks)
-            ->filter(fn ($check) => blank($check['value']))
-            ->map(fn ($check) => [
-                'field_key' => $check['field_key'],
-                'label' => $check['label'],
-                'description' => $check['description'],
-                'severity' => $check['severity'],
-            ])
-            ->values()
-            ->all();
+        foreach ($checks as $field => $details) {
+            if (blank($submission->{$field})) {
+                $missing[] = [
+                    'field_name' => $field,
+                    'label' => $details['label'],
+                    'description' => $details['description'],
+                    'severity' => $details['severity'],
+                ];
+            }
+        }
+
+        return $missing;
     }
 }
