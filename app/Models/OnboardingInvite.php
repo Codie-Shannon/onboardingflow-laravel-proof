@@ -56,4 +56,14 @@ class OnboardingInvite extends Model
     {
         return $this->hasMany(MissingInfoItem::class)->where('resolved', false);
     }
+
+    public function notes()
+    {
+        return $this->hasMany(OnboardingNote::class);
+    }
+
+    public function activityLogs()
+    {
+        return $this->hasMany(ActivityLog::class);
+    }
 }
