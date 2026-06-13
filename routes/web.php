@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\OnboardingInviteController;
 use App\Http\Controllers\PublicOnboardingFormController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\OnboardingTemplateController;
 
 Route::get('/', function () {
     return redirect()->route('admin.onboarding.dashboard');
@@ -36,6 +37,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::get('/exports/submissions.csv', [OnboardingInviteController::class, 'exportSubmissionsCsv'])
             ->name('exports.submissions');
+
+        Route::get('/templates', [OnboardingTemplateController::class, 'index'])
+            ->name('templates.index');
+
+        Route::get('/templates/create', [OnboardingTemplateController::class, 'create'])
+            ->name('templates.create');
+
+        Route::post('/templates', [OnboardingTemplateController::class, 'store'])
+            ->name('templates.store');
+
+        Route::get('/templates/{template}', [OnboardingTemplateController::class, 'show'])
+            ->name('templates.show');
     });
 });
 
