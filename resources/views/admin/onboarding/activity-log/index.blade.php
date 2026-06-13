@@ -1,51 +1,65 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Activity Log</title>
-</head>
-<body>
-    <h1>Activity Log</h1>
+<x-layouts.admin
+    title="Activity Log"
+    heading="Activity Log"
+    subheading="Review onboarding workflow activity across all invites.">
 
-    <p>
-        <a href="{{ route('admin.onboarding.dashboard') }}">Dashboard</a> |
-        <a href="{{ route('admin.onboarding.invites.index') }}">View invites</a>
-    </p>
-
-    <table border="1" cellpadding="8">
-        <thead>
-            <tr>
-                <th>Created</th>
-                <th>Actor</th>
-                <th>Action</th>
-                <th>Description</th>
-                <th>Invite</th>
-            </tr>
-        </thead>
-        <tbody>
-            @forelse ($activityLogs as $activity)
+    <section class="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-500">
                 <tr>
-                    <td>{{ $activity->created_at->format('d M Y H:i') }}</td>
-                    <td>{{ $activity->actor_name }}</td>
-                    <td>{{ ucwords(str_replace('_', ' ', $activity->action)) }}</td>
-                    <td>{{ $activity->description ?? '-' }}</td>
-                    <td>
-                        @if ($activity->invite)
-                            <a href="{{ route('admin.onboarding.invites.show', $activity->invite) }}">
-                                {{ $activity->invite->recipient_name }}
-                            </a>
-                        @else
-                            -
-                        @endif
-                    </td>
+                    <th class="text-left px-6 py-3">Created</th>
+                    <th class="text-left px-6 py-3">Actor</th>
+                    <th class="text-left px-6 py-3">Action</th>
+                    <th class="text-left px-6 py-3">Description</th>
+                    <th class="text-right px-6 py-3">Invite</th>
                 </tr>
-            @empty
-                <tr>
-                    <td colspan="5">No activity yet.</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
+            </thead>
 
-    {{ $activityLogs->links() }}
-</body>
-</html>
+            <tbody class="divide-y divide-slate-100">
+                @forelse ($activityLogs as $activity)
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-6 py-4 text-slate-600">
+                            {{ $activity->created_at->format('d M Y H:i') }}
+                        </td>
+
+                        <td class="px-6 py-4 font-medium text-slate-900">
+                            {{ $activity->actor_name }}
+                        </td>
+
+                        <td class="px-6 py-4">
+                            <span class="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800">
+                                {{ ucwords(str_replace('_', ' ', $activity->action)) }}
+                            </span>
+                        </td>
+
+                        <td class="px-6 py-4 text-slate-600">
+                            {{ $activity->description ?? '-' }}
+                        </td>
+
+                        <td class="px-6 py-4 text-right">
+                            @if ($activity->invite)
+                                <a class="font-semibold text-teal-800 hover:text-teal-950"
+                                   href="{{ route('admin.onboarding.invites.show', $activity->invite) }}">
+                                    {{ $activity->invite->recipient_name }}
+                                </a>
+                            @else
+                                -
+                            @endif
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="5" class="px-6 py-10 text-center text-slate-500">
+                            No activity yet.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </section>
+
+    <div class="mt-6">
+        {{ $activityLogs->links() }}
+    </div>
+
+</x-layouts.admin>
