@@ -34,7 +34,7 @@
                     <td>{{ $invite->recipient_email }}</td>
                     <td>{{ $invite->organisation ?? '-' }}</td>
                     <td>{{ $invite->role ?? '-' }}</td>
-                    <td>{{ $invite->status }}</td>
+                    <td>{{ $invite->statusLabel() }}</td>
                     <td>{{ optional($invite->expires_at)->format('d M Y') ?? '-' }}</td>
                     <td>{{ $invite->created_at->format('d M Y H:i') }}</td>
                     <td>

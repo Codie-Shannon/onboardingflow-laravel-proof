@@ -14,6 +14,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/invites/create', [OnboardingInviteController::class, 'create'])->name('invites.create');
         Route::post('/invites', [OnboardingInviteController::class, 'store'])->name('invites.store');
         Route::get('/invites/{invite}', [OnboardingInviteController::class, 'show'])->name('invites.show');
+        Route::post('/invites/{invite}/status', [OnboardingInviteController::class, 'updateStatus'])->name('invites.update-status');
     });
 });
 
@@ -23,3 +24,6 @@ Route::get('/onboarding/{token}', [PublicOnboardingFormController::class, 'show'
 
 Route::post('/onboarding/{token}', [PublicOnboardingFormController::class, 'store'])
     ->name('public.onboarding.store');
+
+Route::post('/invites/{invite}/status', [OnboardingInviteController::class, 'updateStatus'])
+    ->name('invites.update-status');

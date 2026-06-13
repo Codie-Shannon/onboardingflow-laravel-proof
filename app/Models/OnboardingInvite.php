@@ -27,4 +27,23 @@ class OnboardingInvite extends Model
     {
         return $this->hasOne(OnboardingSubmission::class);
     }
+
+    public static function statuses(): array
+    {
+        return [
+            'sent' => 'Sent',
+            'started' => 'Started',
+            'submitted' => 'Submitted',
+            'in_review' => 'In Review',
+            'needs_info' => 'Needs Info',
+            'approved' => 'Approved',
+            'rejected' => 'Rejected',
+            'expired' => 'Expired',
+        ];
+    }
+
+    public function statusLabel(): string
+    {
+        return self::statuses()[$this->status] ?? ucfirst(str_replace('_', ' ', $this->status));
+    }
 }

@@ -48,10 +48,26 @@ class OnboardingInviteController extends Controller
     public function show(OnboardingInvite $invite)
     {
         $publicUrl = route('public.onboarding.show', $invite->token);
-
+    
         return view('admin.onboarding.invites.show', [
             'invite' => $invite,
             'publicUrl' => $publicUrl,
+            'statuses' => OnboardingInvite::statuses(),
         ]);
+    }
+
+    public function updateStatus(Request $request, OnboardingInvite $invite)
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:sent,started,submitted,in_review,needs_info,approved,rejected,expired'],
+        ]);
+
+        $invite->update([
+            'status' => $validated['status'],
+        ]);
+
+        return redirect()
+            ->route('admin.onboarding.invites.show', $invite)
+            ->with('success', 'Onboarding status updated.');
     }
 }
