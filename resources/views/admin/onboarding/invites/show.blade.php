@@ -40,6 +40,12 @@
                 {{ session('success') }}
             </div>
         @endif
+        
+        @if (session('error'))
+            <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                {{ session('error') }}
+            </div>
+        @endif
 
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">Invite Details</h2>
@@ -92,6 +98,89 @@
                     <p class="mt-2 text-sm text-slate-700">{{ $invite->message }}</p>
                 </div>
             @endif
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-lg font-semibold text-slate-900">Invite Email</h2>
+
+                        @if ($invite->email_last_error)
+                            <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
+                                Last send failed
+                            </span>
+                        @elseif (($invite->email_send_count ?? 0) > 0)
+                            <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                                Sent
+                            </span>
+                        @else
+                            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                                Not sent
+                            </span>
+                        @endif
+                    </div>
+
+                    <p class="mt-1 text-sm text-slate-600">
+                        Preview and send the onboarding invite email through Outlook / Microsoft 365 using Microsoft Graph.
+                    </p>
+
+                    <div class="mt-4 grid gap-4 sm:grid-cols-3">
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Last Sent</div>
+                            <div class="mt-1 text-sm text-slate-900">
+                                {{ optional($invite->email_last_sent_at)->format('d M Y, g:i A') ?? 'Not sent yet' }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Send Count</div>
+                            <div class="mt-1 text-sm text-slate-900">
+                                {{ $invite->email_send_count ?? 0 }}
+                            </div>
+                        </div>
+
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Provider</div>
+                            <div class="mt-1 text-sm text-slate-900">
+                                {{ $invite->email_provider ? ucwords(str_replace('_', ' ', $invite->email_provider)) : 'Microsoft Graph' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    @if ($invite->email_last_error)
+                        <div class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4">
+                            <div class="text-xs font-semibold uppercase tracking-wide text-red-700">
+                                Last Email Error
+                            </div>
+                            <p class="mt-2 whitespace-pre-wrap break-words text-sm text-red-800">
+                                {{ $invite->email_last_error }}
+                            </p>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                    <a
+                        href="{{ route('admin.onboarding.invites.email-preview', $invite) }}"
+                        target="_blank"
+                        class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                    >
+                        Preview Email
+                    </a>
+
+                    <form method="POST" action="{{ route('admin.onboarding.invites.send-email', $invite) }}">
+                        @csrf
+
+                        <button
+                            type="submit"
+                            class="rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-800"
+                        >
+                            {{ ($invite->email_send_count ?? 0) > 0 ? 'Resend Email' : 'Send Email' }}
+                        </button>
+                    </form>
+                </div>
+            </div>
         </section>
 
         @if ($invite->submission)

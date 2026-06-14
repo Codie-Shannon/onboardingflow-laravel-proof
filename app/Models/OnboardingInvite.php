@@ -17,11 +17,16 @@ class OnboardingInvite extends Model
         'expires_at',
         'submitted_at',
         'message',
+        'email_last_sent_at',
+        'email_send_count',
+        'email_provider',
+        'email_last_error',
     ];
 
     protected $casts = [
         'expires_at' => 'datetime',
         'submitted_at' => 'datetime',
+        'email_last_sent_at' => 'datetime',
     ];
 
     public static function statuses(): array

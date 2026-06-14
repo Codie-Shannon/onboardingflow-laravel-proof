@@ -26,6 +26,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/invites/{invite}', [OnboardingInviteController::class, 'show'])
             ->name('invites.show');
 
+        Route::get('/invites/{invite}/email-preview', [OnboardingInviteController::class, 'previewInviteEmail'])
+            ->name('invites.email-preview');
+
+        Route::post('/invites/{invite}/send-email', [OnboardingInviteController::class, 'sendInviteEmail'])
+            ->name('invites.send-email');
+
         Route::post('/invites/{invite}/review-checklist/{item}/toggle', [OnboardingInviteController::class, 'toggleReviewChecklistItem'])
             ->name('invites.review-checklist.toggle');
 

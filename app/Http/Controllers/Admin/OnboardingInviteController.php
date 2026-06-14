@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
 use App\Models\DocumentRequirement;
 use App\Models\MissingInfoFollowUp;
+use App\Services\MicrosoftGraphMailService;
+use Throwable;
 
 class OnboardingInviteController extends Controller
 {
@@ -604,5 +606,74 @@ class OnboardingInviteController extends Controller
         return redirect()
             ->route('admin.onboarding.invites.show', $invite)
             ->with('success', 'Missing info item marked as resolved.');
+    }
+
+    public function previewInviteEmail(OnboardingInvite $invite)
+    {
+        $invite->loadMissing('template');
+
+        return view('emails.onboarding.invite', [
+            'invite' => $invite,
+            'publicUrl' => route('public.onboarding.show', $invite->token),
+        ]);
+    }
+
+    public function sendInviteEmail(OnboardingInvite $invite, MicrosoftGraphMailService $mailService)
+    {
+        $invite->loadMissing('template');
+
+        $sendCountBeforeSend = (int) ($invite->email_send_count ?? 0);
+        $provider = config('onboarding.email_provider', 'microsoft_graph');
+
+        try {
+            $htmlBody = view('emails.onboarding.invite', [
+                'invite' => $invite,
+                'publicUrl' => route('public.onboarding.show', $invite->token),
+            ])->render();
+
+            if ($provider !== 'microsoft_graph') {
+                throw new \RuntimeException("Unsupported email provider: {$provider}");
+            }
+
+            $mailService->sendInviteEmail($invite, $htmlBody);
+
+            $invite->update([
+                'email_last_sent_at' => now(),
+                'email_send_count' => $sendCountBeforeSend + 1,
+                'email_provider' => 'microsoft_graph',
+                'email_last_error' => null,
+            ]);
+
+            ActivityLog::create([
+                'onboarding_invite_id' => $invite->id,
+                'actor_name' => 'Admin User',
+                'action' => 'invite_email_sent',
+                'description' => $sendCountBeforeSend > 0
+                    ? "Onboarding invite email resent to {$invite->recipient_email} using Microsoft Graph."
+                    : "Onboarding invite email sent to {$invite->recipient_email} using Microsoft Graph.",
+            ]);
+
+            return redirect()
+                ->route('admin.onboarding.invites.show', $invite)
+                ->with('success', 'Invite email sent through Microsoft Graph.');
+        } catch (Throwable $exception) {
+            $safeError = str($exception->getMessage())->limit(1500)->toString();
+
+            $invite->update([
+                'email_provider' => 'microsoft_graph',
+                'email_last_error' => $safeError,
+            ]);
+
+            ActivityLog::create([
+                'onboarding_invite_id' => $invite->id,
+                'actor_name' => 'Admin User',
+                'action' => 'invite_email_failed',
+                'description' => "Onboarding invite email failed for {$invite->recipient_email}.",
+            ]);
+
+            return redirect()
+                ->route('admin.onboarding.invites.show', $invite)
+                ->with('error', 'Invite email failed. Check the Invite Email error details.');
+        }
     }
 }
