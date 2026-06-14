@@ -26,6 +26,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/invites/{invite}', [OnboardingInviteController::class, 'show'])
             ->name('invites.show');
 
+        Route::post('/invites/{invite}/review-checklist/{item}/toggle', [OnboardingInviteController::class, 'toggleReviewChecklistItem'])
+            ->name('invites.review-checklist.toggle');
+
         Route::post('/invites/{invite}/status', [OnboardingInviteController::class, 'updateStatus'])
             ->name('invites.update-status');
 

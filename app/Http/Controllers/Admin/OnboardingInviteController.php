@@ -8,7 +8,9 @@ use App\Models\MissingInfoItem;
 use App\Models\OnboardingInvite;
 use App\Models\OnboardingNote;
 use App\Models\OnboardingTemplate;
+use App\Models\ReviewChecklistItem;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
 
 class OnboardingInviteController extends Controller
@@ -69,6 +71,8 @@ class OnboardingInviteController extends Controller
             'expires_at' => now()->addDays($expiryDays),
         ]);
 
+        $this->createReviewChecklistItemsFromTemplate($invite);
+
         ActivityLog::create([
             'onboarding_invite_id' => $invite->id,
             'actor_name' => 'Admin User',
@@ -89,6 +93,7 @@ class OnboardingInviteController extends Controller
             'template',
             'submission',
             'missingInfoItems',
+            'reviewChecklistItems',
             'notes' => fn ($query) => $query->latest(),
             'activityLogs' => fn ($query) => $query->latest(),
         ]);
@@ -124,6 +129,34 @@ class OnboardingInviteController extends Controller
         return redirect()
             ->route('admin.onboarding.invites.show', $invite)
             ->with('success', 'Onboarding status updated.');
+    }
+
+    public function toggleReviewChecklistItem(OnboardingInvite $invite, ReviewChecklistItem $item)
+    {
+        if ((int) $item->onboarding_invite_id !== (int) $invite->id) {
+            abort(404);
+        }
+
+        $wasCompleted = $item->is_completed;
+
+        $item->update([
+            'is_completed' => ! $wasCompleted,
+            'completed_at' => $wasCompleted ? null : now(),
+            'completed_by' => $wasCompleted ? null : 'Admin User',
+        ]);
+
+        ActivityLog::create([
+            'onboarding_invite_id' => $invite->id,
+            'actor_name' => 'Admin User',
+            'action' => 'review_checklist_updated',
+            'description' => $wasCompleted
+                ? "Marked checklist item as incomplete: \"{$item->label}\"."
+                : "Marked checklist item as complete: \"{$item->label}\".",
+        ]);
+
+        return redirect()
+            ->route('admin.onboarding.invites.show', $invite)
+            ->with('success', 'Review checklist updated.');
     }
 
     public function storeNote(Request $request, OnboardingInvite $invite)
@@ -289,6 +322,35 @@ class OnboardingInviteController extends Controller
             fclose($handle);
         };
 
-        return response()->stream($callback, 200, $headers);
+        return Response::stream($callback, 200, $headers);
+    }
+
+    private function createReviewChecklistItemsFromTemplate(OnboardingInvite $invite): void
+    {
+        $invite->loadMissing('template');
+
+        if (! $invite->template || empty($invite->template->review_checklist)) {
+            return;
+        }
+
+        foreach ($invite->template->review_checklist as $index => $checklistItem) {
+            $label = is_array($checklistItem)
+                ? ($checklistItem['label'] ?? $checklistItem['name'] ?? null)
+                : $checklistItem;
+
+            if (! $label || ! is_string($label)) {
+                continue;
+            }
+
+            ReviewChecklistItem::create([
+                'onboarding_invite_id' => $invite->id,
+                'label' => trim($label),
+                'description' => is_array($checklistItem)
+                    ? ($checklistItem['description'] ?? null)
+                    : null,
+                'sort_order' => $index + 1,
+                'is_completed' => false,
+            ]);
+        }
     }
 }

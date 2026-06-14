@@ -72,4 +72,11 @@ class OnboardingInvite extends Model
     {
         return $this->hasMany(ActivityLog::class);
     }
+
+    public function reviewChecklistItems()
+    {
+        return $this->hasMany(ReviewChecklistItem::class, 'onboarding_invite_id')
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
 }
