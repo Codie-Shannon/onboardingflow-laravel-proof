@@ -3,16 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\DocumentRequirement;
 use App\Models\MissingInfoItem;
 use App\Models\OnboardingInvite;
 use App\Models\OnboardingSubmission;
+use App\Services\MicrosoftSharePointDocumentService;
 use Illuminate\Http\Request;
+use Throwable;
 
 class PublicOnboardingFormController extends Controller
 {
     public function show(string $token)
     {
-        $invite = OnboardingInvite::with(['template', 'submission'])
+        $invite = OnboardingInvite::with(['template', 'submission', 'documentRequirements'])
             ->where('token', $token)
             ->firstOrFail();
 
@@ -33,9 +36,9 @@ class PublicOnboardingFormController extends Controller
         ]);
     }
 
-    public function store(Request $request, string $token)
+    public function store(Request $request, string $token, MicrosoftSharePointDocumentService $documentService)
     {
-        $invite = OnboardingInvite::with(['template', 'submission'])
+        $invite = OnboardingInvite::with(['template', 'submission', 'documentRequirements'])
             ->where('token', $token)
             ->firstOrFail();
 
@@ -61,6 +64,8 @@ class PublicOnboardingFormController extends Controller
             'emergency_contact_name' => ['nullable', 'string', 'max:255'],
             'emergency_contact_phone' => ['nullable', 'string', 'max:255'],
             'notes' => ['nullable', 'string', 'max:3000'],
+            'documents' => ['nullable', 'array'],
+            'documents.*' => ['nullable', 'file', 'max:10240'],
         ]);
 
         $submission = OnboardingSubmission::create([
@@ -74,7 +79,7 @@ class PublicOnboardingFormController extends Controller
             'emergency_contact_name' => $validated['emergency_contact_name'] ?? null,
             'emergency_contact_phone' => $validated['emergency_contact_phone'] ?? null,
             'notes' => $validated['notes'] ?? null,
-            'raw_payload' => $validated,
+            'raw_payload' => collect($validated)->except('documents')->toArray(),
         ]);
 
         $missingItems = $this->detectMissingInfo($invite, $submission);
@@ -91,6 +96,10 @@ class PublicOnboardingFormController extends Controller
                 'resolved' => false,
             ]);
         }
+
+        $this->processDocumentUploads($request, $invite, $submission, $documentService);
+
+        $invite->refresh();
 
         $invite->update([
             'status' => count($missingItems) > 0 ? 'needs_info' : 'submitted',
@@ -110,6 +119,47 @@ class PublicOnboardingFormController extends Controller
             'invite' => $invite,
             'submission' => $submission,
         ]);
+    }
+
+    private function processDocumentUploads(
+        Request $request,
+        OnboardingInvite $invite,
+        OnboardingSubmission $submission,
+        MicrosoftSharePointDocumentService $documentService
+    ): void {
+        foreach ($invite->documentRequirements as $requirement) {
+            $file = $request->file("documents.{$requirement->id}");
+
+            if (! $file) {
+                continue;
+            }
+
+            try {
+                $metadata = $documentService->uploadRequirementDocument($invite, $requirement, $file);
+
+                $requirement->update(array_merge($metadata, [
+                    'status' => $requirement->status === 'reviewed' ? 'reviewed' : 'provided',
+                ]));
+
+                ActivityLog::create([
+                    'onboarding_invite_id' => $invite->id,
+                    'actor_name' => $submission->first_name . ' ' . $submission->last_name,
+                    'action' => 'document_uploaded',
+                    'description' => "Uploaded document for \"{$requirement->label}\".",
+                ]);
+            } catch (Throwable $exception) {
+                $requirement->update([
+                    'upload_error' => str($exception->getMessage())->limit(1500)->toString(),
+                ]);
+
+                ActivityLog::create([
+                    'onboarding_invite_id' => $invite->id,
+                    'actor_name' => $submission->first_name . ' ' . $submission->last_name,
+                    'action' => 'document_upload_failed',
+                    'description' => "Upload failed for \"{$requirement->label}\".",
+                ]);
+            }
+        }
     }
 
     private function detectMissingInfo(OnboardingInvite $invite, OnboardingSubmission $submission): array

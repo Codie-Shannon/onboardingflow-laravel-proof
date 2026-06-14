@@ -16,7 +16,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('public.onboarding.store', $invite->token) }}" class="space-y-8">
+            <form method="POST" action="{{ route('public.onboarding.store', $invite->token) }}" enctype="multipart/form-data" class="space-y-8">
                 @csrf
 
                 <div>
@@ -106,6 +106,65 @@
                         </div>
                     </div>
                 </div>
+
+                @if ($invite->documentRequirements->isNotEmpty())
+                    <div class="border-t border-slate-200 pt-8">
+                        <h2 class="text-lg font-semibold text-slate-900">Required Documents</h2>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Upload the documents requested for this onboarding invite. Files are stored in SharePoint for review.
+                        </p>
+
+                        <div class="mt-5 space-y-4">
+                            @foreach ($invite->documentRequirements as $requirement)
+                                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                        <div>
+                                            <div class="text-sm font-semibold text-slate-900">
+                                                {{ $requirement->label }}
+                                            </div>
+
+                                            @if ($requirement->description)
+                                                <p class="mt-1 text-sm text-slate-500">
+                                                    {{ $requirement->description }}
+                                                </p>
+                                            @endif
+                                        </div>
+
+                                        <span class="w-fit rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
+                                            {{ $requirement->statusLabel() }}
+                                        </span>
+                                    </div>
+
+                                    @if ($requirement->hasUploadedFile())
+                                        <div class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                                            Current upload: {{ $requirement->uploaded_original_name }}
+                                        </div>
+                                    @endif
+
+                                    @if ($requirement->upload_error)
+                                        <div class="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+                                            Previous upload error: {{ $requirement->upload_error }}
+                                        </div>
+                                    @endif
+
+                                    <div class="mt-4">
+                                        <label class="block text-sm font-semibold text-slate-700">
+                                            {{ $requirement->hasUploadedFile() ? 'Replace file' : 'Upload file' }}
+                                        </label>
+                                        <input
+                                            type="file"
+                                            name="documents[{{ $requirement->id }}]"
+                                            class="mt-2 block w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 file:mr-4 file:rounded-lg file:border-0 file:bg-teal-50 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-teal-800 hover:file:bg-teal-100"
+                                        >
+                                        <p class="mt-2 text-xs text-slate-500">
+                                            Maximum file size: 10MB.
+                                        </p>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
 
                 <div class="border-t border-slate-200 pt-8">
                     <h2 class="text-lg font-semibold text-slate-900">Additional Notes</h2>

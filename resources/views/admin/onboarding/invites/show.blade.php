@@ -524,17 +524,23 @@
                 <div>
                     <h2 class="text-lg font-semibold text-slate-900">Document Requirements</h2>
                     <p class="mt-1 text-sm text-slate-600">
-                        Track required documents copied from the selected onboarding template.
+                        Track required documents, SharePoint uploads, and reviewer status.
                     </p>
                 </div>
 
                 @php
                     $totalDocumentRequirements = $invite->documentRequirements->count();
                     $reviewedDocumentRequirements = $invite->documentRequirements->where('status', 'reviewed')->count();
+                    $uploadedDocumentRequirements = $invite->documentRequirements->filter(fn ($requirement) => $requirement->hasUploadedFile())->count();
                 @endphp
 
-                <div class="inline-flex w-fit items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
-                    {{ $reviewedDocumentRequirements }} / {{ $totalDocumentRequirements }} reviewed
+                <div class="flex flex-wrap gap-2">
+                    <div class="inline-flex w-fit items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+                        {{ $reviewedDocumentRequirements }} / {{ $totalDocumentRequirements }} reviewed
+                    </div>
+                    <div class="inline-flex w-fit items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-700">
+                        {{ $uploadedDocumentRequirements }} uploaded
+                    </div>
                 </div>
             </div>
 
@@ -554,6 +560,7 @@
                         <thead class="bg-slate-50">
                             <tr>
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">Document</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Upload</th>
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">Status</th>
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">Reviewed</th>
                                 @if ($canReview)
@@ -565,7 +572,7 @@
                         <tbody class="divide-y divide-slate-200 bg-white">
                             @foreach ($invite->documentRequirements as $requirement)
                                 <tr>
-                                    <td class="px-4 py-3">
+                                    <td class="px-4 py-3 align-top">
                                         <div class="font-medium text-slate-900">
                                             {{ $requirement->label }}
                                         </div>
@@ -577,7 +584,40 @@
                                         @endif
                                     </td>
 
-                                    <td class="px-4 py-3">
+                                    <td class="px-4 py-3 align-top">
+                                        @if ($requirement->hasUploadedFile())
+                                            <div class="space-y-2">
+                                                <div class="font-medium text-slate-900">
+                                                    {{ $requirement->uploaded_original_name }}
+                                                </div>
+
+                                                <div class="text-xs text-slate-500">
+                                                    {{ optional($requirement->uploaded_at)->format('d M Y, g:i A') ?? '-' }}
+                                                    · {{ $requirement->uploadedFileSizeLabel() }}
+                                                </div>
+
+                                                <a
+                                                    href="{{ $requirement->sharepoint_web_url }}"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    class="inline-flex rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                                                >
+                                                    Open in SharePoint
+                                                </a>
+                                            </div>
+                                        @else
+                                            <span class="text-slate-500">No file uploaded</span>
+                                        @endif
+
+                                        @if ($requirement->upload_error)
+                                            <div class="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800">
+                                                <div class="font-semibold">Upload error</div>
+                                                <div class="mt-1 whitespace-pre-wrap break-words">{{ $requirement->upload_error }}</div>
+                                            </div>
+                                        @endif
+                                    </td>
+
+                                    <td class="px-4 py-3 align-top">
                                         @php
                                             $statusClasses = [
                                                 'missing' => 'bg-red-100 text-red-700',
@@ -594,7 +634,7 @@
                                         </span>
                                     </td>
 
-                                    <td class="px-4 py-3 text-slate-600">
+                                    <td class="px-4 py-3 align-top text-slate-600">
                                         @if ($requirement->reviewed_at)
                                             <div>{{ $requirement->reviewed_at->format('d M Y, g:i A') }}</div>
 
@@ -609,11 +649,11 @@
                                     </td>
 
                                     @if ($canReview)
-                                        <td class="px-4 py-3">
+                                        <td class="px-4 py-3 align-top">
                                             <form
                                                 method="POST"
                                                 action="{{ route('admin.onboarding.invites.document-requirements.update-status', [$invite, $requirement]) }}"
-                                                class="flex flex-col gap-2 sm:flex-row"
+                                                class="flex flex-col gap-2"
                                             >
                                                 @csrf
 
