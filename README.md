@@ -1,58 +1,147 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# OnboardingFlow
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+OnboardingFlow is a Laravel/MySQL proof-of-concept for a trackable onboarding workflow.
 
-## About Laravel
+It was built as a standalone sample-data project to demonstrate how an onboarding process could move from manual emailed documents into a structured review workflow.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This proof is not connected to OSHE systems and is not production-ready.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Project Summary
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+OnboardingFlow demonstrates a complete onboarding review loop:
 
-## Learning Laravel
+1. Admin creates an onboarding template.
+2. Admin creates an invite for an applicant.
+3. Applicant opens the public onboarding link.
+4. Applicant submits onboarding details and required documents.
+5. Documents are uploaded to SharePoint through Microsoft Graph.
+6. Reviewer checks the submission, checklist, and documents.
+7. Reviewer can request missing information.
+8. Applicant can reopen the same link and resubmit updates.
+9. Activity history records the workflow trail.
+10. Reports summarise onboarding progress.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## What It Demonstrates
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- Template-based onboarding invites
+- Public applicant onboarding form
+- Submission tracking
+- Required document tracking
+- SharePoint-backed document uploads
+- Reviewer checklist
+- Missing-information follow-up
+- Applicant resubmission workflow
+- Admin / Reviewer / Read-only roles
+- Activity history
+- Reports page
+- CSV export
+- Microsoft Graph invite email sending
+- Microsoft Graph needs-info email sending
+- Microsoft 365 integration path
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Recommended Demo Path
 
-## Agentic Development
+1. Log in as admin.
+2. Open the dashboard.
+3. Open the invite list.
+4. Open an onboarding invite.
+5. View the public applicant form.
+6. Upload a required document.
+7. Confirm the document appears in SharePoint.
+8. Log in as reviewer.
+9. Mark a document as reviewed.
+10. Request missing information.
+11. Preview or send the needs-info follow-up email.
+12. Open the public link again in resubmission mode.
+13. Resubmit updated information.
+14. View the activity log and reports.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Tech Stack
 
-```bash
-composer require laravel/boost --dev
+- Laravel
+- PHP
+- MySQL
+- Blade
+- Tailwind CSS
+- Microsoft Graph
+- Outlook email sending
+- SharePoint document storage
 
-php artisan boost:install
+## Demo Users
+
+After seeding:
+
+```text
+admin@example.com / password
+reviewer@example.com / password
+readonly@example.com / password
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Environment Configuration
 
-## Contributing
+Copy `.env.example` to `.env` and configure the local database and Microsoft 365 values as required.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Microsoft 365 values should never be committed to source control.
 
-## Code of Conduct
+```env
+ONBOARDING_EMAIL_PROVIDER=microsoft_graph
+ONBOARDING_DOCUMENT_STORAGE_PROVIDER=sharepoint
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+MICROSOFT_TENANT_ID=
+MICROSOFT_CLIENT_ID=
+MICROSOFT_CLIENT_SECRET=
+MICROSOFT_MAIL_FROM=
 
-## Security Vulnerabilities
+MICROSOFT_SHAREPOINT_SITE_ID=
+MICROSOFT_SHAREPOINT_DRIVE_ID=
+MICROSOFT_SHAREPOINT_FOLDER=OnboardingFlow
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Local Setup
 
-## License
+Install dependencies:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+composer install
+npm install
+```
+
+Create the app key:
+
+```bash
+php artisan key:generate
+```
+
+Run migrations and seed demo users:
+
+```bash
+php artisan migrate
+php artisan db:seed --class=DemoUserSeeder
+```
+
+Run the app:
+
+```bash
+php artisan serve
+npm run dev
+```
+
+## Documentation
+
+See the `docs` folder for project summary, demo script, demo video plan, manual QA checklist, Microsoft 365 setup notes, production readiness notes, known limitations, pilot next steps, and screenshots.
+
+## Known Limitations
+
+This is a proof-of-concept, not a production system.
+
+Before production or pilot use, it would need security review, privacy review, deployment hardening, monitoring/error handling, data retention policy, Microsoft 365 tenant/domain review, user acceptance testing, secrets management, file upload security review, and backup/recovery planning.
+
+## Microsoft 365 Note
+
+The proof uses Microsoft Graph for Outlook email and SharePoint document storage.
+
+External delivery from a new development Microsoft 365 tenant may be blocked by Microsoft outbound protection. A real pilot should use the organisation's production tenant/domain or complete Microsoft support/domain reputation setup.
+
+## Safe Demo Framing
+
+This project uses sample data and is separate from any real organisation systems. It is intended to make the workflow easier to review visually.
