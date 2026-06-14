@@ -675,4 +675,81 @@ class OnboardingInviteController extends Controller
     {
         return auth()->user()?->name ?? 'System';
     }
+
+    public function previewNeedsInfoEmail(OnboardingInvite $invite)
+    {
+        $invite->loadMissing([
+            'template',
+            'submission',
+            'missingInfoItems.followUps',
+            'documentRequirements',
+        ]);
+
+        return view('emails.onboarding.needs-info', [
+            'invite' => $invite,
+            'publicUrl' => route('public.onboarding.show', $invite->token),
+        ]);
+    }
+
+    public function sendNeedsInfoEmail(OnboardingInvite $invite, MicrosoftGraphMailService $mailService)
+    {
+        $invite->loadMissing([
+            'template',
+            'submission',
+            'missingInfoItems.followUps',
+            'documentRequirements',
+        ]);
+
+        $sendCountBeforeSend = (int) ($invite->follow_up_send_count ?? 0);
+        $provider = config('onboarding.email_provider', 'microsoft_graph');
+
+        try {
+            $htmlBody = view('emails.onboarding.needs-info', [
+                'invite' => $invite,
+                'publicUrl' => route('public.onboarding.show', $invite->token),
+            ])->render();
+
+            if ($provider !== 'microsoft_graph') {
+                throw new \RuntimeException("Unsupported email provider: {$provider}");
+            }
+
+            $mailService->sendNeedsInfoEmail($invite, $htmlBody);
+
+            $invite->update([
+                'last_follow_up_sent_at' => now(),
+                'follow_up_send_count' => $sendCountBeforeSend + 1,
+                'follow_up_last_error' => null,
+            ]);
+
+            ActivityLog::create([
+                'onboarding_invite_id' => $invite->id,
+                'actor_name' => $this->actorName(),
+                'action' => 'needs_info_email_sent',
+                'description' => $sendCountBeforeSend > 0
+                    ? "Needs-info follow-up email resent to {$invite->recipient_email} using Microsoft Graph."
+                    : "Needs-info follow-up email sent to {$invite->recipient_email} using Microsoft Graph.",
+            ]);
+
+            return redirect()
+                ->route('admin.onboarding.invites.show', $invite)
+                ->with('success', 'Needs-info follow-up email sent through Microsoft Graph.');
+        } catch (Throwable $exception) {
+            $safeError = str($exception->getMessage())->limit(1500)->toString();
+
+            $invite->update([
+                'follow_up_last_error' => $safeError,
+            ]);
+
+            ActivityLog::create([
+                'onboarding_invite_id' => $invite->id,
+                'actor_name' => $this->actorName(),
+                'action' => 'needs_info_email_failed',
+                'description' => "Needs-info follow-up email failed for {$invite->recipient_email}.",
+            ]);
+
+            return redirect()
+                ->route('admin.onboarding.invites.show', $invite)
+                ->with('error', 'Needs-info email failed. Check the follow-up email error details.');
+        }
+    }
 }

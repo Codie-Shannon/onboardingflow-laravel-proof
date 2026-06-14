@@ -15,6 +15,30 @@ class MicrosoftGraphMailService
 
     public function sendInviteEmail(OnboardingInvite $invite, string $htmlBody): void
     {
+        $this->sendMail(
+            invite: $invite,
+            subject: 'Onboarding invitation',
+            htmlBody: $htmlBody,
+            failurePrefix: 'Microsoft Graph sendMail failed'
+        );
+    }
+
+    public function sendNeedsInfoEmail(OnboardingInvite $invite, string $htmlBody): void
+    {
+        $this->sendMail(
+            invite: $invite,
+            subject: 'Onboarding information needed',
+            htmlBody: $htmlBody,
+            failurePrefix: 'Microsoft Graph needs-info email failed'
+        );
+    }
+
+    private function sendMail(
+        OnboardingInvite $invite,
+        string $subject,
+        string $htmlBody,
+        string $failurePrefix
+    ): void {
         $mailFrom = config('onboarding.microsoft.mail_from');
 
         if (! $mailFrom) {
@@ -31,7 +55,7 @@ class MicrosoftGraphMailService
             ->acceptJson()
             ->post($endpoint, [
                 'message' => [
-                    'subject' => 'Onboarding invitation',
+                    'subject' => $subject,
                     'body' => [
                         'contentType' => 'HTML',
                         'content' => $htmlBody,
@@ -50,7 +74,7 @@ class MicrosoftGraphMailService
 
         if (! $response->successful()) {
             throw new RuntimeException(
-                'Microsoft Graph sendMail failed: ' . $response->body()
+                $failurePrefix . ': ' . $response->body()
             );
         }
     }

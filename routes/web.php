@@ -83,6 +83,13 @@ Route::prefix('admin')
                 Route::get('/reports', [OnboardingInviteController::class, 'reports'])
                     ->name('reports.index');
 
+                Route::get('/invites/{invite}/needs-info-email-preview', [OnboardingInviteController::class, 'previewNeedsInfoEmail'])
+                    ->name('invites.needs-info-email-preview');
+
+                Route::post('/invites/{invite}/send-needs-info-email', [OnboardingInviteController::class, 'sendNeedsInfoEmail'])
+                    ->name('invites.send-needs-info-email')
+                    ->middleware('role:admin,reviewer');
+
                 Route::get('/exports/submissions.csv', [OnboardingInviteController::class, 'exportSubmissionsCsv'])
                     ->name('exports.submissions')
                     ->middleware('role:admin,reviewer');

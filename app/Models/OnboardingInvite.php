@@ -21,12 +21,21 @@ class OnboardingInvite extends Model
         'email_send_count',
         'email_provider',
         'email_last_error',
+        'resubmitted_at',
+        'resubmission_count',
+        'last_follow_up_sent_at',
+        'follow_up_send_count',
+        'follow_up_last_error',
     ];
 
     protected $casts = [
         'expires_at' => 'datetime',
         'submitted_at' => 'datetime',
         'email_last_sent_at' => 'datetime',
+        'resubmitted_at' => 'datetime',
+        'last_follow_up_sent_at' => 'datetime',
+        'resubmission_count' => 'integer',
+        'follow_up_send_count' => 'integer',
     ];
 
     public static function statuses(): array

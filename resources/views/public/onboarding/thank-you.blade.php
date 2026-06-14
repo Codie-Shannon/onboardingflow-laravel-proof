@@ -8,11 +8,23 @@
             ✓
         </div>
 
-        <h2 class="mt-6 text-2xl font-semibold text-slate-900">Submission received</h2>
+        @if ($isResubmission ?? false)
+            <h1 class="text-2xl font-bold text-slate-900">
+                Updated information submitted
+            </h1>
 
-        <p class="mt-3 text-sm leading-6 text-slate-600">
-            The team can now review your details and follow up if anything else is needed.
-        </p>
+            <p class="mt-3 text-slate-600">
+                Thanks — your updated onboarding information has been resubmitted for review.
+            </p>
+        @else
+            <h1 class="text-2xl font-bold text-slate-900">
+                Onboarding submitted
+            </h1>
+
+            <p class="mt-3 text-slate-600">
+                Thanks — your onboarding information has been submitted for review.
+            </p>
+        @endif
 
         <div class="mt-6 rounded-xl bg-slate-50 border border-slate-200 p-4 text-left">
             <div class="text-sm font-semibold text-slate-900">What happens next?</div>
