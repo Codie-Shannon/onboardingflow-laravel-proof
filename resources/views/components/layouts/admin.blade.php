@@ -33,6 +33,7 @@
                         ['label' => 'Create Invite', 'route' => 'admin.onboarding.invites.create'],
                         ['label' => 'Form Templates', 'route' => 'admin.onboarding.templates.index'],
                         ['label' => 'Activity Log', 'route' => 'admin.onboarding.activity-log.index'],
+                        ['label' => 'Reports', 'route' => 'admin.onboarding.reports.index'],
                     ];
                 @endphp
 
@@ -50,7 +51,7 @@
                 <div class="pt-5 mt-5 border-t border-slate-200">
                     <div class="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Planned Week 2</div>
 
-                    @foreach (['Review Queue', 'Missing Info', 'Reports', 'Settings'] as $placeholder)
+                    @foreach (['Review Queue', 'Missing Info', 'Settings'] as $placeholder)
                         <div class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-400">
                             <span class="w-2 h-2 rounded-full bg-slate-300"></span>
                             {{ $placeholder }}

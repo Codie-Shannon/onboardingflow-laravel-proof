@@ -81,7 +81,7 @@ class OnboardingInviteController extends Controller
             'actor_name' => 'Admin User',
             'action' => 'invite_created',
             'description' => $template
-                ? "Onboarding invite created for {$invite->recipient_name} using {$template->name} template."
+                ? "Onboarding invite created for {$invite->recipient_name} using {$template->name}."
                 : "Onboarding invite created for {$invite->recipient_name}.",
         ]);
 
@@ -248,6 +248,117 @@ class OnboardingInviteController extends Controller
             'missingInfoItems' => $missingInfoItems,
             'recentActivity' => $recentActivity,
             'completionPercent' => $completionPercent,
+        ]);
+    }
+
+    public function reports()
+    {
+        $totalInvites = OnboardingInvite::count();
+
+        $statusCounts = [
+            'sent' => OnboardingInvite::where('status', 'sent')->count(),
+            'started' => OnboardingInvite::where('status', 'started')->count(),
+            'submitted' => OnboardingInvite::where('status', 'submitted')->count(),
+            'in_review' => OnboardingInvite::where('status', 'in_review')->count(),
+            'needs_info' => OnboardingInvite::where('status', 'needs_info')->count(),
+            'approved' => OnboardingInvite::where('status', 'approved')->count(),
+            'rejected' => OnboardingInvite::where('status', 'rejected')->count(),
+            'expired' => OnboardingInvite::where('status', 'expired')->count(),
+        ];
+
+        $submittedInvites = OnboardingInvite::whereNotNull('submitted_at')->count();
+        $approvedInvites = $statusCounts['approved'];
+        $needsInfoInvites = $statusCounts['needs_info'];
+
+        $submissionRate = $totalInvites > 0
+            ? round(($submittedInvites / $totalInvites) * 100)
+            : 0;
+
+        $approvalRate = $totalInvites > 0
+            ? round(($approvedInvites / $totalInvites) * 100)
+            : 0;
+
+        $templates = OnboardingTemplate::withCount('invites')
+            ->orderByDesc('invites_count')
+            ->orderBy('name')
+            ->get();
+
+        $totalMissingInfoItems = MissingInfoItem::count();
+        $resolvedMissingInfoItems = MissingInfoItem::where('resolved', true)->count();
+        $openMissingInfoItems = MissingInfoItem::where('resolved', false)->count();
+
+        $missingInfoResolutionRate = $totalMissingInfoItems > 0
+            ? round(($resolvedMissingInfoItems / $totalMissingInfoItems) * 100)
+            : 0;
+
+        $totalChecklistItems = ReviewChecklistItem::count();
+        $completedChecklistItems = ReviewChecklistItem::where('is_completed', true)->count();
+
+        $checklistCompletionRate = $totalChecklistItems > 0
+            ? round(($completedChecklistItems / $totalChecklistItems) * 100)
+            : 0;
+
+        $documentRequirementCounts = [
+            'missing' => DocumentRequirement::where('status', 'missing')->count(),
+            'provided' => DocumentRequirement::where('status', 'provided')->count(),
+            'reviewed' => DocumentRequirement::where('status', 'reviewed')->count(),
+            'not_required' => DocumentRequirement::where('status', 'not_required')->count(),
+        ];
+
+        $totalDocumentRequirements = array_sum($documentRequirementCounts);
+
+        $documentReviewRate = $totalDocumentRequirements > 0
+            ? round(($documentRequirementCounts['reviewed'] / $totalDocumentRequirements) * 100)
+            : 0;
+
+        $followUpSummary = [
+            'open' => class_exists(MissingInfoFollowUp::class)
+                ? MissingInfoFollowUp::where('status', 'open')->count()
+                : 0,
+            'resolved' => class_exists(MissingInfoFollowUp::class)
+                ? MissingInfoFollowUp::where('status', 'resolved')->count()
+                : 0,
+            'cancelled' => class_exists(MissingInfoFollowUp::class)
+                ? MissingInfoFollowUp::where('status', 'cancelled')->count()
+                : 0,
+        ];
+
+        $recentNeedsInfoInvites = OnboardingInvite::with(['template', 'submission'])
+            ->withCount([
+                'unresolvedMissingInfoItems',
+            ])
+            ->where('status', 'needs_info')
+            ->latest()
+            ->take(8)
+            ->get();
+
+        $recentActivity = ActivityLog::with('invite')
+            ->latest()
+            ->take(8)
+            ->get();
+
+        return view('admin.onboarding.reports.index', [
+            'totalInvites' => $totalInvites,
+            'statusCounts' => $statusCounts,
+            'submittedInvites' => $submittedInvites,
+            'approvedInvites' => $approvedInvites,
+            'needsInfoInvites' => $needsInfoInvites,
+            'submissionRate' => $submissionRate,
+            'approvalRate' => $approvalRate,
+            'templates' => $templates,
+            'totalMissingInfoItems' => $totalMissingInfoItems,
+            'resolvedMissingInfoItems' => $resolvedMissingInfoItems,
+            'openMissingInfoItems' => $openMissingInfoItems,
+            'missingInfoResolutionRate' => $missingInfoResolutionRate,
+            'totalChecklistItems' => $totalChecklistItems,
+            'completedChecklistItems' => $completedChecklistItems,
+            'checklistCompletionRate' => $checklistCompletionRate,
+            'documentRequirementCounts' => $documentRequirementCounts,
+            'totalDocumentRequirements' => $totalDocumentRequirements,
+            'documentReviewRate' => $documentReviewRate,
+            'followUpSummary' => $followUpSummary,
+            'recentNeedsInfoInvites' => $recentNeedsInfoInvites,
+            'recentActivity' => $recentActivity,
         ]);
     }
 
