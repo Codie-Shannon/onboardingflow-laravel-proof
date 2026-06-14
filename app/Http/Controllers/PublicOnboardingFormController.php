@@ -252,12 +252,32 @@ class PublicOnboardingFormController extends Controller
 
                 $requirement->update([
                     'status' => 'provided',
-                    'sharepoint_drive_id' => $upload['drive_id'],
-                    'sharepoint_item_id' => $upload['item_id'],
-                    'sharepoint_web_url' => $upload['web_url'],
-                    'uploaded_original_name' => $upload['original_name'],
-                    'uploaded_mime_type' => $upload['mime_type'],
-                    'uploaded_size' => $upload['size'],
+                    'sharepoint_drive_id' => $upload['drive_id']
+                        ?? $upload['sharepoint_drive_id']
+                        ?? config('onboarding.sharepoint.drive_id'),
+                
+                    'sharepoint_item_id' => $upload['item_id']
+                        ?? $upload['sharepoint_item_id']
+                        ?? $upload['id']
+                        ?? null,
+                
+                    'sharepoint_web_url' => $upload['web_url']
+                        ?? $upload['sharepoint_web_url']
+                        ?? $upload['webUrl']
+                        ?? null,
+                
+                    'uploaded_original_name' => $upload['original_name']
+                        ?? $upload['uploaded_original_name']
+                        ?? $file->getClientOriginalName(),
+                
+                    'uploaded_mime_type' => $upload['mime_type']
+                        ?? $upload['uploaded_mime_type']
+                        ?? $file->getClientMimeType(),
+                
+                    'uploaded_size' => $upload['size']
+                        ?? $upload['uploaded_size']
+                        ?? $file->getSize(),
+                
                     'uploaded_at' => now(),
                     'upload_error' => null,
                 ]);
