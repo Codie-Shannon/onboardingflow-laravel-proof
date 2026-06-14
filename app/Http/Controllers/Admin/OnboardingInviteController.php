@@ -4,17 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
+use App\Models\DocumentRequirement;
+use App\Models\MissingInfoFollowUp;
 use App\Models\MissingInfoItem;
 use App\Models\OnboardingInvite;
 use App\Models\OnboardingNote;
 use App\Models\OnboardingTemplate;
 use App\Models\ReviewChecklistItem;
+use App\Services\MicrosoftGraphMailService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
-use App\Models\DocumentRequirement;
-use App\Models\MissingInfoFollowUp;
-use App\Services\MicrosoftGraphMailService;
 use Throwable;
 
 class OnboardingInviteController extends Controller
@@ -80,7 +80,7 @@ class OnboardingInviteController extends Controller
 
         ActivityLog::create([
             'onboarding_invite_id' => $invite->id,
-            'actor_name' => 'Admin User',
+            'actor_name' => $this->actorName(),
             'action' => 'invite_created',
             'description' => $template
                 ? "Onboarding invite created for {$invite->recipient_name} using {$template->name}."
@@ -115,6 +115,75 @@ class OnboardingInviteController extends Controller
         ]);
     }
 
+    public function previewInviteEmail(OnboardingInvite $invite)
+    {
+        $invite->loadMissing('template');
+
+        return view('emails.onboarding.invite', [
+            'invite' => $invite,
+            'publicUrl' => route('public.onboarding.show', $invite->token),
+        ]);
+    }
+
+    public function sendInviteEmail(OnboardingInvite $invite, MicrosoftGraphMailService $mailService)
+    {
+        $invite->loadMissing('template');
+
+        $sendCountBeforeSend = (int) ($invite->email_send_count ?? 0);
+        $provider = config('onboarding.email_provider', 'microsoft_graph');
+
+        try {
+            $htmlBody = view('emails.onboarding.invite', [
+                'invite' => $invite,
+                'publicUrl' => route('public.onboarding.show', $invite->token),
+            ])->render();
+
+            if ($provider !== 'microsoft_graph') {
+                throw new \RuntimeException("Unsupported email provider: {$provider}");
+            }
+
+            $mailService->sendInviteEmail($invite, $htmlBody);
+
+            $invite->update([
+                'email_last_sent_at' => now(),
+                'email_send_count' => $sendCountBeforeSend + 1,
+                'email_provider' => 'microsoft_graph',
+                'email_last_error' => null,
+            ]);
+
+            ActivityLog::create([
+                'onboarding_invite_id' => $invite->id,
+                'actor_name' => $this->actorName(),
+                'action' => 'invite_email_sent',
+                'description' => $sendCountBeforeSend > 0
+                    ? "Onboarding invite email resent to {$invite->recipient_email} using Microsoft Graph."
+                    : "Onboarding invite email sent to {$invite->recipient_email} using Microsoft Graph.",
+            ]);
+
+            return redirect()
+                ->route('admin.onboarding.invites.show', $invite)
+                ->with('success', 'Invite email sent through Microsoft Graph.');
+        } catch (Throwable $exception) {
+            $safeError = str($exception->getMessage())->limit(1500)->toString();
+
+            $invite->update([
+                'email_provider' => 'microsoft_graph',
+                'email_last_error' => $safeError,
+            ]);
+
+            ActivityLog::create([
+                'onboarding_invite_id' => $invite->id,
+                'actor_name' => $this->actorName(),
+                'action' => 'invite_email_failed',
+                'description' => "Onboarding invite email failed for {$invite->recipient_email}.",
+            ]);
+
+            return redirect()
+                ->route('admin.onboarding.invites.show', $invite)
+                ->with('error', 'Invite email failed. Check the Invite Email error details.');
+        }
+    }
+
     public function updateStatus(Request $request, OnboardingInvite $invite)
     {
         $validated = $request->validate([
@@ -129,7 +198,7 @@ class OnboardingInviteController extends Controller
 
         ActivityLog::create([
             'onboarding_invite_id' => $invite->id,
-            'actor_name' => 'Admin User',
+            'actor_name' => $this->actorName(),
             'action' => 'status_changed',
             'description' => "Status changed from {$oldStatus} to {$validated['status']}.",
         ]);
@@ -150,12 +219,12 @@ class OnboardingInviteController extends Controller
         $item->update([
             'is_completed' => ! $wasCompleted,
             'completed_at' => $wasCompleted ? null : now(),
-            'completed_by' => $wasCompleted ? null : 'Admin User',
+            'completed_by' => $wasCompleted ? null : $this->actorName(),
         ]);
 
         ActivityLog::create([
             'onboarding_invite_id' => $invite->id,
-            'actor_name' => 'Admin User',
+            'actor_name' => $this->actorName(),
             'action' => 'review_checklist_updated',
             'description' => $wasCompleted
                 ? "Marked checklist item as incomplete: \"{$item->label}\"."
@@ -167,6 +236,112 @@ class OnboardingInviteController extends Controller
             ->with('success', 'Review checklist updated.');
     }
 
+    public function updateDocumentRequirementStatus(Request $request, OnboardingInvite $invite, DocumentRequirement $requirement)
+    {
+        if ((int) $requirement->onboarding_invite_id !== (int) $invite->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:missing,provided,reviewed,not_required'],
+        ]);
+
+        $oldStatus = $requirement->status;
+        $newStatus = $validated['status'];
+
+        $requirement->update([
+            'status' => $newStatus,
+            'reviewed_at' => $newStatus === 'reviewed' ? now() : $requirement->reviewed_at,
+            'reviewed_by' => $newStatus === 'reviewed' ? $this->actorName() : $requirement->reviewed_by,
+        ]);
+
+        ActivityLog::create([
+            'onboarding_invite_id' => $invite->id,
+            'actor_name' => $this->actorName(),
+            'action' => 'document_requirement_updated',
+            'description' => "Document requirement \"{$requirement->label}\" changed from {$oldStatus} to {$newStatus}.",
+        ]);
+
+        return redirect()
+            ->route('admin.onboarding.invites.show', $invite)
+            ->with('success', 'Document requirement updated.');
+    }
+
+    public function storeMissingInfoFollowUp(Request $request, OnboardingInvite $invite, MissingInfoItem $item)
+    {
+        if ((int) $item->onboarding_invite_id !== (int) $invite->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'message' => ['required', 'string', 'max:3000'],
+            'due_at' => ['nullable', 'date'],
+        ]);
+
+        MissingInfoFollowUp::create([
+            'onboarding_invite_id' => $invite->id,
+            'missing_info_item_id' => $item->id,
+            'message' => $validated['message'],
+            'status' => 'open',
+            'requested_by' => $this->actorName(),
+            'requested_at' => now(),
+            'due_at' => $validated['due_at'] ?? null,
+        ]);
+
+        ActivityLog::create([
+            'onboarding_invite_id' => $invite->id,
+            'actor_name' => $this->actorName(),
+            'action' => 'missing_info_follow_up_created',
+            'description' => "Follow-up requested for missing info item \"{$item->label}\".",
+        ]);
+
+        return redirect()
+            ->route('admin.onboarding.invites.show', $invite)
+            ->with('success', 'Missing info follow-up created.');
+    }
+
+    public function resolveMissingInfoItem(OnboardingInvite $invite, MissingInfoItem $item)
+    {
+        if ((int) $item->onboarding_invite_id !== (int) $invite->id) {
+            abort(404);
+        }
+
+        $item->update([
+            'resolved' => true,
+            'resolved_at' => now(),
+        ]);
+
+        MissingInfoFollowUp::where('onboarding_invite_id', $invite->id)
+            ->where('missing_info_item_id', $item->id)
+            ->where('status', 'open')
+            ->update([
+                'status' => 'resolved',
+                'resolved_by' => $this->actorName(),
+                'resolved_at' => now(),
+            ]);
+
+        $remainingMissingInfoCount = MissingInfoItem::where('onboarding_invite_id', $invite->id)
+            ->where('resolved', false)
+            ->count();
+
+        if ($remainingMissingInfoCount === 0 && $invite->status === 'needs_info') {
+            $invite->update([
+                'status' => 'in_review',
+            ]);
+        }
+
+        ActivityLog::create([
+            'onboarding_invite_id' => $invite->id,
+            'actor_name' => $this->actorName(),
+            'action' => 'missing_info_resolved',
+            'description' => "Missing info item resolved: \"{$item->label}\".",
+        ]);
+
+        return redirect()
+            ->route('admin.onboarding.invites.show', $invite)
+            ->with('success', 'Missing info item marked as resolved.');
+    }
+
     public function storeNote(Request $request, OnboardingInvite $invite)
     {
         $validated = $request->validate([
@@ -175,15 +350,15 @@ class OnboardingInviteController extends Controller
 
         OnboardingNote::create([
             'onboarding_invite_id' => $invite->id,
-            'author_name' => 'Admin User',
+            'author_name' => $this->actorName(),
             'note' => $validated['note'],
         ]);
 
         ActivityLog::create([
             'onboarding_invite_id' => $invite->id,
-            'actor_name' => 'Admin User',
+            'actor_name' => $this->actorName(),
             'action' => 'note_added',
-            'description' => 'Admin note added.',
+            'description' => 'Internal note added.',
         ]);
 
         return redirect()
@@ -314,15 +489,9 @@ class OnboardingInviteController extends Controller
             : 0;
 
         $followUpSummary = [
-            'open' => class_exists(MissingInfoFollowUp::class)
-                ? MissingInfoFollowUp::where('status', 'open')->count()
-                : 0,
-            'resolved' => class_exists(MissingInfoFollowUp::class)
-                ? MissingInfoFollowUp::where('status', 'resolved')->count()
-                : 0,
-            'cancelled' => class_exists(MissingInfoFollowUp::class)
-                ? MissingInfoFollowUp::where('status', 'cancelled')->count()
-                : 0,
+            'open' => MissingInfoFollowUp::where('status', 'open')->count(),
+            'resolved' => MissingInfoFollowUp::where('status', 'resolved')->count(),
+            'cancelled' => MissingInfoFollowUp::where('status', 'cancelled')->count(),
         ];
 
         $recentNeedsInfoInvites = OnboardingInvite::with(['template', 'submission'])
@@ -369,7 +538,7 @@ class OnboardingInviteController extends Controller
         $fileName = 'onboarding-submissions-' . now()->format('Y-m-d-His') . '.csv';
 
         ActivityLog::create([
-            'actor_name' => 'Admin User',
+            'actor_name' => $this->actorName(),
             'action' => 'csv_exported',
             'description' => 'Onboarding submissions CSV exported.',
         ]);
@@ -502,178 +671,8 @@ class OnboardingInviteController extends Controller
         }
     }
 
-    public function updateDocumentRequirementStatus(Request $request, OnboardingInvite $invite, DocumentRequirement $requirement)
+    private function actorName(): string
     {
-        if ((int) $requirement->onboarding_invite_id !== (int) $invite->id) {
-            abort(404);
-        }
-
-        $validated = $request->validate([
-            'status' => ['required', 'string', 'in:missing,provided,reviewed,not_required'],
-        ]);
-
-        $oldStatus = $requirement->status;
-        $newStatus = $validated['status'];
-
-        $requirement->update([
-            'status' => $newStatus,
-            'reviewed_at' => $newStatus === 'reviewed' ? now() : $requirement->reviewed_at,
-            'reviewed_by' => $newStatus === 'reviewed' ? 'Admin User' : $requirement->reviewed_by,
-        ]);
-
-        ActivityLog::create([
-            'onboarding_invite_id' => $invite->id,
-            'actor_name' => 'Admin User',
-            'action' => 'document_requirement_updated',
-            'description' => "Document requirement \"{$requirement->label}\" changed from {$oldStatus} to {$newStatus}.",
-        ]);
-
-        return redirect()
-            ->route('admin.onboarding.invites.show', $invite)
-            ->with('success', 'Document requirement updated.');
-    }
-
-    public function storeMissingInfoFollowUp(Request $request, OnboardingInvite $invite, MissingInfoItem $item)
-    {
-        if ((int) $item->onboarding_invite_id !== (int) $invite->id) {
-            abort(404);
-        }
-
-        $validated = $request->validate([
-            'message' => ['required', 'string', 'max:3000'],
-            'due_at' => ['nullable', 'date'],
-        ]);
-
-        MissingInfoFollowUp::create([
-            'onboarding_invite_id' => $invite->id,
-            'missing_info_item_id' => $item->id,
-            'message' => $validated['message'],
-            'status' => 'open',
-            'requested_by' => 'Admin User',
-            'requested_at' => now(),
-            'due_at' => $validated['due_at'] ?? null,
-        ]);
-
-        ActivityLog::create([
-            'onboarding_invite_id' => $invite->id,
-            'actor_name' => 'Admin User',
-            'action' => 'missing_info_follow_up_created',
-            'description' => "Follow-up requested for missing info item \"{$item->label}\".",
-        ]);
-
-        return redirect()
-            ->route('admin.onboarding.invites.show', $invite)
-            ->with('success', 'Missing info follow-up created.');
-    }
-
-    public function resolveMissingInfoItem(OnboardingInvite $invite, MissingInfoItem $item)
-    {
-        if ((int) $item->onboarding_invite_id !== (int) $invite->id) {
-            abort(404);
-        }
-
-        $item->update([
-            'resolved' => true,
-            'resolved_at' => now(),
-        ]);
-
-        MissingInfoFollowUp::where('onboarding_invite_id', $invite->id)
-            ->where('missing_info_item_id', $item->id)
-            ->where('status', 'open')
-            ->update([
-                'status' => 'resolved',
-                'resolved_by' => 'Admin User',
-                'resolved_at' => now(),
-            ]);
-
-        $remainingMissingInfoCount = MissingInfoItem::where('onboarding_invite_id', $invite->id)
-            ->where('resolved', false)
-            ->count();
-
-        if ($remainingMissingInfoCount === 0 && $invite->status === 'needs_info') {
-            $invite->update([
-                'status' => 'in_review',
-            ]);
-        }
-
-        ActivityLog::create([
-            'onboarding_invite_id' => $invite->id,
-            'actor_name' => 'Admin User',
-            'action' => 'missing_info_resolved',
-            'description' => "Missing info item resolved: \"{$item->label}\".",
-        ]);
-
-        return redirect()
-            ->route('admin.onboarding.invites.show', $invite)
-            ->with('success', 'Missing info item marked as resolved.');
-    }
-
-    public function previewInviteEmail(OnboardingInvite $invite)
-    {
-        $invite->loadMissing('template');
-
-        return view('emails.onboarding.invite', [
-            'invite' => $invite,
-            'publicUrl' => route('public.onboarding.show', $invite->token),
-        ]);
-    }
-
-    public function sendInviteEmail(OnboardingInvite $invite, MicrosoftGraphMailService $mailService)
-    {
-        $invite->loadMissing('template');
-
-        $sendCountBeforeSend = (int) ($invite->email_send_count ?? 0);
-        $provider = config('onboarding.email_provider', 'microsoft_graph');
-
-        try {
-            $htmlBody = view('emails.onboarding.invite', [
-                'invite' => $invite,
-                'publicUrl' => route('public.onboarding.show', $invite->token),
-            ])->render();
-
-            if ($provider !== 'microsoft_graph') {
-                throw new \RuntimeException("Unsupported email provider: {$provider}");
-            }
-
-            $mailService->sendInviteEmail($invite, $htmlBody);
-
-            $invite->update([
-                'email_last_sent_at' => now(),
-                'email_send_count' => $sendCountBeforeSend + 1,
-                'email_provider' => 'microsoft_graph',
-                'email_last_error' => null,
-            ]);
-
-            ActivityLog::create([
-                'onboarding_invite_id' => $invite->id,
-                'actor_name' => 'Admin User',
-                'action' => 'invite_email_sent',
-                'description' => $sendCountBeforeSend > 0
-                    ? "Onboarding invite email resent to {$invite->recipient_email} using Microsoft Graph."
-                    : "Onboarding invite email sent to {$invite->recipient_email} using Microsoft Graph.",
-            ]);
-
-            return redirect()
-                ->route('admin.onboarding.invites.show', $invite)
-                ->with('success', 'Invite email sent through Microsoft Graph.');
-        } catch (Throwable $exception) {
-            $safeError = str($exception->getMessage())->limit(1500)->toString();
-
-            $invite->update([
-                'email_provider' => 'microsoft_graph',
-                'email_last_error' => $safeError,
-            ]);
-
-            ActivityLog::create([
-                'onboarding_invite_id' => $invite->id,
-                'actor_name' => 'Admin User',
-                'action' => 'invite_email_failed',
-                'description' => "Onboarding invite email failed for {$invite->recipient_email}.",
-            ]);
-
-            return redirect()
-                ->route('admin.onboarding.invites.show', $invite)
-                ->with('error', 'Invite email failed. Check the Invite Email error details.');
-        }
+        return auth()->user()?->name ?? 'System';
     }
 }

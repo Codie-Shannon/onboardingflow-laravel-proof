@@ -1,4 +1,10 @@
 <x-layouts.admin>
+    @php
+        $currentUser = auth()->user();
+        $isAdmin = $currentUser?->isAdmin();
+        $canReview = $currentUser?->canReview();
+    @endphp
+
     <div class="space-y-6">
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
@@ -169,16 +175,18 @@
                         Preview Email
                     </a>
 
-                    <form method="POST" action="{{ route('admin.onboarding.invites.send-email', $invite) }}">
-                        @csrf
+                    @if ($isAdmin)
+                        <form method="POST" action="{{ route('admin.onboarding.invites.send-email', $invite) }}">
+                            @csrf
 
-                        <button
-                            type="submit"
-                            class="rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-800"
-                        >
-                            {{ ($invite->email_send_count ?? 0) > 0 ? 'Resend Email' : 'Send Email' }}
-                        </button>
-                    </form>
+                            <button
+                                type="submit"
+                                class="rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-800"
+                            >
+                                {{ ($invite->email_send_count ?? 0) > 0 ? 'Resend Email' : 'Send Email' }}
+                            </button>
+                        </form>
+                    @endif
                 </div>
             </div>
         </section>
@@ -284,7 +292,7 @@
                                     </p>
                                 </div>
 
-                                @if (! $item->resolved)
+                                @if ($canReview && ! $item->resolved)
                                     <form
                                         method="POST"
                                         action="{{ route('admin.onboarding.invites.missing-info.resolve', [$invite, $item]) }}"
@@ -351,7 +359,7 @@
                                 </div>
                             @endif
 
-                            @if (! $item->resolved)
+                            @if ($canReview && ! $item->resolved)
                                 <form
                                     method="POST"
                                     action="{{ route('admin.onboarding.invites.missing-info.follow-ups.store', [$invite, $item]) }}"
@@ -435,21 +443,34 @@
                     @foreach ($invite->reviewChecklistItems as $item)
                         <div class="flex items-start justify-between gap-4 rounded-xl border border-slate-200 p-4">
                             <div class="flex items-start gap-3">
-                                <form method="POST" action="{{ route('admin.onboarding.invites.review-checklist.toggle', [$invite, $item]) }}">
-                                    @csrf
+                                @if ($canReview)
+                                    <form method="POST" action="{{ route('admin.onboarding.invites.review-checklist.toggle', [$invite, $item]) }}">
+                                        @csrf
 
-                                    <button
-                                        type="submit"
-                                        class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-md border text-sm font-bold transition
+                                        <button
+                                            type="submit"
+                                            class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-md border text-sm font-bold transition
+                                                {{ $item->is_completed
+                                                    ? 'border-emerald-500 bg-emerald-500 text-white'
+                                                    : 'border-slate-300 bg-white text-transparent hover:border-slate-500'
+                                                }}"
+                                            title="{{ $item->is_completed ? 'Mark incomplete' : 'Mark complete' }}"
+                                        >
+                                            ✓
+                                        </button>
+                                    </form>
+                                @else
+                                    <div
+                                        class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-md border text-sm font-bold
                                             {{ $item->is_completed
                                                 ? 'border-emerald-500 bg-emerald-500 text-white'
-                                                : 'border-slate-300 bg-white text-transparent hover:border-slate-500'
+                                                : 'border-slate-300 bg-white text-transparent'
                                             }}"
-                                        title="{{ $item->is_completed ? 'Mark incomplete' : 'Mark complete' }}"
+                                        title="{{ $item->is_completed ? 'Complete' : 'Pending' }}"
                                     >
                                         ✓
-                                    </button>
-                                </form>
+                                    </div>
+                                @endif
 
                                 <div>
                                     <div class="font-medium {{ $item->is_completed ? 'text-slate-500 line-through' : 'text-slate-900' }}">
@@ -535,7 +556,9 @@
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">Document</th>
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">Status</th>
                                 <th class="px-4 py-3 text-left font-semibold text-slate-700">Reviewed</th>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Update</th>
+                                @if ($canReview)
+                                    <th class="px-4 py-3 text-left font-semibold text-slate-700">Update</th>
+                                @endif
                             </tr>
                         </thead>
 
@@ -585,33 +608,35 @@
                                         @endif
                                     </td>
 
-                                    <td class="px-4 py-3">
-                                        <form
-                                            method="POST"
-                                            action="{{ route('admin.onboarding.invites.document-requirements.update-status', [$invite, $requirement]) }}"
-                                            class="flex flex-col gap-2 sm:flex-row"
-                                        >
-                                            @csrf
-
-                                            <select
-                                                name="status"
-                                                class="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                    @if ($canReview)
+                                        <td class="px-4 py-3">
+                                            <form
+                                                method="POST"
+                                                action="{{ route('admin.onboarding.invites.document-requirements.update-status', [$invite, $requirement]) }}"
+                                                class="flex flex-col gap-2 sm:flex-row"
                                             >
-                                                @foreach ($documentRequirementStatuses as $value => $label)
-                                                    <option value="{{ $value }}" @selected($requirement->status === $value)>
-                                                        {{ $label }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
+                                                @csrf
 
-                                            <button
-                                                type="submit"
-                                                class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
-                                            >
-                                                Save
-                                            </button>
-                                        </form>
-                                    </td>
+                                                <select
+                                                    name="status"
+                                                    class="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                >
+                                                    @foreach ($documentRequirementStatuses as $value => $label)
+                                                        <option value="{{ $value }}" @selected($requirement->status === $value)>
+                                                            {{ $label }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+
+                                                <button
+                                                    type="submit"
+                                                    class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
+                                                >
+                                                    Save
+                                                </button>
+                                            </form>
+                                        </td>
+                                    @endif
                                 </tr>
                             @endforeach
                         </tbody>
@@ -623,31 +648,37 @@
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">Review Status</h2>
 
-            <form
-                method="POST"
-                action="{{ route('admin.onboarding.invites.update-status', $invite) }}"
-                class="mt-4 flex flex-col gap-3 sm:flex-row"
-            >
-                @csrf
-
-                <select
-                    name="status"
-                    class="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+            @if ($canReview)
+                <form
+                    method="POST"
+                    action="{{ route('admin.onboarding.invites.update-status', $invite) }}"
+                    class="mt-4 flex flex-col gap-3 sm:flex-row"
                 >
-                    @foreach ($statuses as $value => $label)
-                        <option value="{{ $value }}" @selected($invite->status === $value)>
-                            {{ $label }}
-                        </option>
-                    @endforeach
-                </select>
+                    @csrf
 
-                <button
-                    type="submit"
-                    class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
-                >
-                    Update Status
-                </button>
-            </form>
+                    <select
+                        name="status"
+                        class="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                    >
+                        @foreach ($statuses as $value => $label)
+                            <option value="{{ $value }}" @selected($invite->status === $value)>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    <button
+                        type="submit"
+                        class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
+                    >
+                        Update Status
+                    </button>
+                </form>
+            @else
+                <p class="mt-4 text-sm text-slate-600">
+                    Current status: <span class="font-semibold text-slate-900">{{ $invite->statusLabel() }}</span>
+                </p>
+            @endif
         </section>
 
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -665,25 +696,27 @@
         </section>
 
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <h2 class="text-lg font-semibold text-slate-900">Admin Notes</h2>
+            <h2 class="text-lg font-semibold text-slate-900">Internal Notes</h2>
 
-            <form method="POST" action="{{ route('admin.onboarding.invites.notes.store', $invite) }}" class="mt-4 space-y-3">
-                @csrf
+            @if ($canReview)
+                <form method="POST" action="{{ route('admin.onboarding.invites.notes.store', $invite) }}" class="mt-4 space-y-3">
+                    @csrf
 
-                <textarea
-                    name="note"
-                    rows="3"
-                    class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                    placeholder="Add an internal admin note..."
-                >{{ old('note') }}</textarea>
+                    <textarea
+                        name="note"
+                        rows="3"
+                        class="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                        placeholder="Add an internal note..."
+                    >{{ old('note') }}</textarea>
 
-                <button
-                    type="submit"
-                    class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
-                >
-                    Add Note
-                </button>
-            </form>
+                    <button
+                        type="submit"
+                        class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+                    >
+                        Add Note
+                    </button>
+                </form>
+            @endif
 
             <div class="mt-5 space-y-3">
                 @forelse ($invite->notes as $note)

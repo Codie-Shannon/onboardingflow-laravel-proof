@@ -2,6 +2,9 @@
     heading="Reports"
     subheading="Review onboarding workflow performance, missing information, checklist progress, and document tracking."
 >
+    @php
+        $currentUser = auth()->user();
+    @endphp
     <div class="space-y-6">
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -272,19 +275,25 @@
                     </div>
                 </div>
 
-                <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
-                    <div class="font-medium text-slate-900">Submission CSV Export</div>
-                    <p class="mt-1 text-sm text-slate-600">
-                        Includes invite, template, submission, status, and missing information summary fields.
-                    </p>
+                @if ($currentUser?->canReview())
+                    <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
+                        <div class="font-medium text-slate-900">Submission CSV Export</div>
+                        <p class="mt-1 text-sm text-slate-600">
+                            Includes invite, template, submission, status, and missing information summary fields.
+                        </p>
 
-                    <a
-                        href="{{ route('admin.onboarding.exports.submissions') }}"
-                        class="mt-4 inline-flex rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-800"
-                    >
-                        Download CSV
-                    </a>
-                </div>
+                        <a
+                            href="{{ route('admin.onboarding.exports.submissions') }}"
+                            class="mt-4 inline-flex rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-teal-800"
+                        >
+                            Download CSV
+                        </a>
+                    </div>
+                @else
+                    <div class="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
+                        CSV export is available to Admin and Reviewer users only.
+                    </div>
+                @endif
 
                 <div class="mt-5">
                     <h3 class="text-sm font-semibold text-slate-900">Recent Activity</h3>

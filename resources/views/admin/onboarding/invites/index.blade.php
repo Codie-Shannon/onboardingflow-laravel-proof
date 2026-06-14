@@ -3,6 +3,10 @@
     heading="Onboarding Invites"
     subheading="Manage onboarding invitations and track their current status.">
 
+    @php
+        $currentUser = auth()->user();
+    @endphp
+
     <div class="mb-6 flex items-center justify-between">
         <div>
             <h2 class="text-lg font-semibold text-slate-900">Invite Register</h2>
@@ -10,15 +14,19 @@
         </div>
 
         <div class="flex gap-3">
-            <a href="{{ route('admin.onboarding.exports.submissions') }}"
-               class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
-                Export CSV
-            </a>
+            @if ($currentUser?->canReview())
+                <a href="{{ route('admin.onboarding.exports.submissions') }}"
+                   class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                    Export CSV
+                </a>
+            @endif
 
-            <a href="{{ route('admin.onboarding.invites.create') }}"
-               class="rounded-xl bg-teal-800 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-900">
-                + Create Invite
-            </a>
+            @if ($currentUser?->isAdmin())
+                <a href="{{ route('admin.onboarding.invites.create') }}"
+                   class="rounded-xl bg-teal-800 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-900">
+                    + Create Invite
+                </a>
+            @endif
         </div>
     </div>
 

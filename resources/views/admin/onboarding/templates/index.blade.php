@@ -3,6 +3,10 @@
     heading="Form Templates"
     subheading="Create reusable onboarding templates for different onboarding scenarios.">
 
+    @php
+        $currentUser = auth()->user();
+    @endphp
+
     <div class="mb-6 flex items-center justify-between">
         <div>
             <h2 class="text-lg font-semibold text-slate-900">Template Library</h2>
@@ -11,10 +15,12 @@
             </p>
         </div>
 
-        <a href="{{ route('admin.onboarding.templates.create') }}"
-           class="rounded-xl bg-teal-800 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-900">
-            + Create Template
-        </a>
+        @if ($currentUser?->isAdmin())
+            <a href="{{ route('admin.onboarding.templates.create') }}"
+               class="rounded-xl bg-teal-800 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-900">
+                + Create Template
+            </a>
+        @endif
     </div>
 
     <section class="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
