@@ -83,6 +83,7 @@ class PublicOnboardingFormController extends Controller
             MissingInfoItem::create([
                 'onboarding_invite_id' => $invite->id,
                 'onboarding_submission_id' => $submission->id,
+                'field_key' => $item['field_key'],
                 'field_name' => $item['field_name'],
                 'label' => $item['label'],
                 'description' => $item['description'],
@@ -146,6 +147,7 @@ class PublicOnboardingFormController extends Controller
         foreach ($checks as $field => $details) {
             if (blank($submission->{$field})) {
                 $missing[] = [
+                    'field_key' => $field,
                     'field_name' => $field,
                     'label' => $details['label'],
                     'description' => $details['description'],

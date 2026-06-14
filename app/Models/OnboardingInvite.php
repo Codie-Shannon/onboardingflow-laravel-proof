@@ -79,4 +79,11 @@ class OnboardingInvite extends Model
             ->orderBy('sort_order')
             ->orderBy('id');
     }
+
+    public function documentRequirements()
+    {
+        return $this->hasMany(DocumentRequirement::class, 'onboarding_invite_id')
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
 }

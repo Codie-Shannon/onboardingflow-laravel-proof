@@ -274,6 +274,128 @@
         </section>
 
         <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900">Document Requirements</h2>
+                    <p class="mt-1 text-sm text-slate-600">
+                        Track required documents copied from the selected onboarding template.
+                    </p>
+                </div>
+
+                @php
+                    $totalDocumentRequirements = $invite->documentRequirements->count();
+                    $reviewedDocumentRequirements = $invite->documentRequirements->where('status', 'reviewed')->count();
+                @endphp
+
+                <div class="inline-flex w-fit items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+                    {{ $reviewedDocumentRequirements }} / {{ $totalDocumentRequirements }} reviewed
+                </div>
+            </div>
+
+            @if ($invite->documentRequirements->isEmpty())
+                <div class="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-600">
+                    No document requirements exist for this invite.
+
+                    @if ($invite->template)
+                        This template may not have had required documents when the invite was created.
+                    @else
+                        Select a template when creating an invite to generate document requirements.
+                    @endif
+                </div>
+            @else
+                <div class="overflow-hidden rounded-xl border border-slate-200">
+                    <table class="min-w-full divide-y divide-slate-200 text-sm">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Document</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Status</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Reviewed</th>
+                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Update</th>
+                            </tr>
+                        </thead>
+
+                        <tbody class="divide-y divide-slate-200 bg-white">
+                            @foreach ($invite->documentRequirements as $requirement)
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="font-medium text-slate-900">
+                                            {{ $requirement->label }}
+                                        </div>
+
+                                        @if ($requirement->description)
+                                            <div class="mt-1 text-xs text-slate-500">
+                                                {{ $requirement->description }}
+                                            </div>
+                                        @endif
+                                    </td>
+
+                                    <td class="px-4 py-3">
+                                        @php
+                                            $statusClasses = [
+                                                'missing' => 'bg-red-100 text-red-700',
+                                                'provided' => 'bg-blue-100 text-blue-700',
+                                                'reviewed' => 'bg-emerald-100 text-emerald-700',
+                                                'not_required' => 'bg-slate-100 text-slate-700',
+                                            ];
+
+                                            $statusClass = $statusClasses[$requirement->status] ?? 'bg-slate-100 text-slate-700';
+                                        @endphp
+
+                                        <span class="rounded-full px-3 py-1 text-xs font-medium {{ $statusClass }}">
+                                            {{ $requirement->statusLabel() }}
+                                        </span>
+                                    </td>
+
+                                    <td class="px-4 py-3 text-slate-600">
+                                        @if ($requirement->reviewed_at)
+                                            <div>{{ $requirement->reviewed_at->format('d M Y, g:i A') }}</div>
+
+                                            @if ($requirement->reviewed_by)
+                                                <div class="text-xs text-slate-500">
+                                                    by {{ $requirement->reviewed_by }}
+                                                </div>
+                                            @endif
+                                        @else
+                                            -
+                                        @endif
+                                    </td>
+
+                                    <td class="px-4 py-3">
+                                        <form
+                                            method="POST"
+                                            action="{{ route('admin.onboarding.invites.document-requirements.update-status', [$invite, $requirement]) }}"
+                                            class="flex flex-col gap-2 sm:flex-row"
+                                        >
+                                            @csrf
+
+                                            <select
+                                                name="status"
+                                                class="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                            >
+                                                @foreach ($documentRequirementStatuses as $value => $label)
+                                                    <option value="{{ $value }}" @selected($requirement->status === $value)>
+                                                        {{ $label }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+
+                                            <button
+                                                type="submit"
+                                                class="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-slate-800"
+                                            >
+                                                Save
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            @endif
+        </section>
+
+        <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900">Review Status</h2>
 
             <form

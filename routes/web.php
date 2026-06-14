@@ -29,6 +29,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/invites/{invite}/review-checklist/{item}/toggle', [OnboardingInviteController::class, 'toggleReviewChecklistItem'])
             ->name('invites.review-checklist.toggle');
 
+        Route::post('/invites/{invite}/document-requirements/{requirement}/status', [OnboardingInviteController::class, 'updateDocumentRequirementStatus'])
+            ->name('invites.document-requirements.update-status');
+
         Route::post('/invites/{invite}/status', [OnboardingInviteController::class, 'updateStatus'])
             ->name('invites.update-status');
 

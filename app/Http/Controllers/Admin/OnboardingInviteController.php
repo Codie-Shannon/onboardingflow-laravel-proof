@@ -12,6 +12,7 @@ use App\Models\ReviewChecklistItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
+use App\Models\DocumentRequirement;
 
 class OnboardingInviteController extends Controller
 {
@@ -72,6 +73,7 @@ class OnboardingInviteController extends Controller
         ]);
 
         $this->createReviewChecklistItemsFromTemplate($invite);
+        $this->createDocumentRequirementsFromTemplate($invite);
 
         ActivityLog::create([
             'onboarding_invite_id' => $invite->id,
@@ -94,6 +96,7 @@ class OnboardingInviteController extends Controller
             'submission',
             'missingInfoItems',
             'reviewChecklistItems',
+            'documentRequirements',
             'notes' => fn ($query) => $query->latest(),
             'activityLogs' => fn ($query) => $query->latest(),
         ]);
@@ -104,6 +107,7 @@ class OnboardingInviteController extends Controller
             'invite' => $invite,
             'publicUrl' => $publicUrl,
             'statuses' => OnboardingInvite::statuses(),
+            'documentRequirementStatuses' => DocumentRequirement::statuses(),
         ]);
     }
 
@@ -352,5 +356,65 @@ class OnboardingInviteController extends Controller
                 'is_completed' => false,
             ]);
         }
+    }
+
+    private function createDocumentRequirementsFromTemplate(OnboardingInvite $invite): void
+    {
+        $invite->loadMissing('template');
+
+        if (! $invite->template || empty($invite->template->required_documents)) {
+            return;
+        }
+
+        foreach ($invite->template->required_documents as $index => $documentRequirement) {
+            $label = is_array($documentRequirement)
+                ? ($documentRequirement['label'] ?? $documentRequirement['name'] ?? null)
+                : $documentRequirement;
+
+            if (! $label || ! is_string($label)) {
+                continue;
+            }
+
+            DocumentRequirement::create([
+                'onboarding_invite_id' => $invite->id,
+                'label' => trim($label),
+                'description' => is_array($documentRequirement)
+                    ? ($documentRequirement['description'] ?? null)
+                    : null,
+                'status' => 'missing',
+                'sort_order' => $index + 1,
+            ]);
+        }
+    }
+
+    public function updateDocumentRequirementStatus(Request $request, OnboardingInvite $invite, DocumentRequirement $requirement)
+    {
+        if ((int) $requirement->onboarding_invite_id !== (int) $invite->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:missing,provided,reviewed,not_required'],
+        ]);
+
+        $oldStatus = $requirement->status;
+        $newStatus = $validated['status'];
+
+        $requirement->update([
+            'status' => $newStatus,
+            'reviewed_at' => $newStatus === 'reviewed' ? now() : $requirement->reviewed_at,
+            'reviewed_by' => $newStatus === 'reviewed' ? 'Admin User' : $requirement->reviewed_by,
+        ]);
+
+        ActivityLog::create([
+            'onboarding_invite_id' => $invite->id,
+            'actor_name' => 'Admin User',
+            'action' => 'document_requirement_updated',
+            'description' => "Document requirement \"{$requirement->label}\" changed from {$oldStatus} to {$newStatus}.",
+        ]);
+
+        return redirect()
+            ->route('admin.onboarding.invites.show', $invite)
+            ->with('success', 'Document requirement updated.');
     }
 }
