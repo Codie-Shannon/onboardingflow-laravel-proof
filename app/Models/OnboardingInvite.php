@@ -86,4 +86,10 @@ class OnboardingInvite extends Model
             ->orderBy('sort_order')
             ->orderBy('id');
     }
+
+    public function missingInfoFollowUps()
+    {
+        return $this->hasMany(MissingInfoFollowUp::class, 'onboarding_invite_id')
+            ->latest();
+    }
 }

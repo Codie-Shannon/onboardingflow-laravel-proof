@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Str;
 use App\Models\DocumentRequirement;
+use App\Models\MissingInfoFollowUp;
 
 class OnboardingInviteController extends Controller
 {
@@ -94,7 +95,8 @@ class OnboardingInviteController extends Controller
         $invite->load([
             'template',
             'submission',
-            'missingInfoItems',
+            'missingInfoItems.followUps',
+            'missingInfoFollowUps.missingInfoItem',
             'reviewChecklistItems',
             'documentRequirements',
             'notes' => fn ($query) => $query->latest(),
@@ -416,5 +418,80 @@ class OnboardingInviteController extends Controller
         return redirect()
             ->route('admin.onboarding.invites.show', $invite)
             ->with('success', 'Document requirement updated.');
+    }
+
+    public function storeMissingInfoFollowUp(Request $request, OnboardingInvite $invite, MissingInfoItem $item)
+    {
+        if ((int) $item->onboarding_invite_id !== (int) $invite->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'message' => ['required', 'string', 'max:3000'],
+            'due_at' => ['nullable', 'date'],
+        ]);
+
+        MissingInfoFollowUp::create([
+            'onboarding_invite_id' => $invite->id,
+            'missing_info_item_id' => $item->id,
+            'message' => $validated['message'],
+            'status' => 'open',
+            'requested_by' => 'Admin User',
+            'requested_at' => now(),
+            'due_at' => $validated['due_at'] ?? null,
+        ]);
+
+        ActivityLog::create([
+            'onboarding_invite_id' => $invite->id,
+            'actor_name' => 'Admin User',
+            'action' => 'missing_info_follow_up_created',
+            'description' => "Follow-up requested for missing info item \"{$item->label}\".",
+        ]);
+
+        return redirect()
+            ->route('admin.onboarding.invites.show', $invite)
+            ->with('success', 'Missing info follow-up created.');
+    }
+
+    public function resolveMissingInfoItem(OnboardingInvite $invite, MissingInfoItem $item)
+    {
+        if ((int) $item->onboarding_invite_id !== (int) $invite->id) {
+            abort(404);
+        }
+
+        $item->update([
+            'resolved' => true,
+            'resolved_at' => now(),
+        ]);
+
+        MissingInfoFollowUp::where('onboarding_invite_id', $invite->id)
+            ->where('missing_info_item_id', $item->id)
+            ->where('status', 'open')
+            ->update([
+                'status' => 'resolved',
+                'resolved_by' => 'Admin User',
+                'resolved_at' => now(),
+            ]);
+
+        $remainingMissingInfoCount = MissingInfoItem::where('onboarding_invite_id', $invite->id)
+            ->where('resolved', false)
+            ->count();
+
+        if ($remainingMissingInfoCount === 0 && $invite->status === 'needs_info') {
+            $invite->update([
+                'status' => 'in_review',
+            ]);
+        }
+
+        ActivityLog::create([
+            'onboarding_invite_id' => $invite->id,
+            'actor_name' => 'Admin User',
+            'action' => 'missing_info_resolved',
+            'description' => "Missing info item resolved: \"{$item->label}\".",
+        ]);
+
+        return redirect()
+            ->route('admin.onboarding.invites.show', $invite)
+            ->with('success', 'Missing info item marked as resolved.');
     }
 }

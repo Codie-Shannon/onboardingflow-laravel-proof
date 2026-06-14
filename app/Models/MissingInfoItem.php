@@ -31,4 +31,10 @@ class MissingInfoItem extends Model
     {
         return $this->belongsTo(OnboardingSubmission::class, 'onboarding_submission_id');
     }
+
+    public function followUps()
+    {
+        return $this->hasMany(MissingInfoFollowUp::class, 'missing_info_item_id')
+            ->latest();
+    }
 }

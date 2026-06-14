@@ -147,31 +147,167 @@
 
         @if ($invite->missingInfoItems->count() > 0)
             <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 class="text-lg font-semibold text-slate-900">Missing Information</h2>
+                <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-900">Missing Information</h2>
+                        <p class="mt-1 text-sm text-slate-600">
+                            Review missing fields, add follow-up requests, and mark items resolved when fixed.
+                        </p>
+                    </div>
 
-                <div class="mt-4 overflow-hidden rounded-xl border border-slate-200">
-                    <table class="min-w-full divide-y divide-slate-200 text-sm">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Item</th>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Description</th>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Severity</th>
-                                <th class="px-4 py-3 text-left font-semibold text-slate-700">Resolved</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-200 bg-white">
-                            @foreach ($invite->missingInfoItems as $item)
-                                <tr>
-                                    <td class="px-4 py-3 text-slate-900">{{ $item->label }}</td>
-                                    <td class="px-4 py-3 text-slate-600">{{ $item->description }}</td>
-                                    <td class="px-4 py-3 text-slate-600">{{ ucfirst($item->severity) }}</td>
-                                    <td class="px-4 py-3 text-slate-600">
-                                        {{ $item->resolved ? 'Yes' : 'No' }}
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                    @php
+                        $totalMissingItems = $invite->missingInfoItems->count();
+                        $resolvedMissingItems = $invite->missingInfoItems->where('resolved', true)->count();
+                    @endphp
+
+                    <div class="inline-flex w-fit items-center rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-700">
+                        {{ $resolvedMissingItems }} / {{ $totalMissingItems }} resolved
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    @foreach ($invite->missingInfoItems as $item)
+                        <div class="rounded-xl border border-slate-200 p-4">
+                            <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="font-semibold text-slate-900">
+                                            {{ $item->label }}
+                                        </h3>
+
+                                        @if ($item->resolved)
+                                            <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700">
+                                                Resolved
+                                            </span>
+                                        @else
+                                            <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">
+                                                Missing
+                                            </span>
+                                        @endif
+
+                                        <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                                            {{ ucfirst($item->severity) }}
+                                        </span>
+                                    </div>
+
+                                    <p class="mt-2 text-sm text-slate-600">
+                                        {{ $item->description }}
+                                    </p>
+                                </div>
+
+                                @if (! $item->resolved)
+                                    <form
+                                        method="POST"
+                                        action="{{ route('admin.onboarding.invites.missing-info.resolve', [$invite, $item]) }}"
+                                    >
+                                        @csrf
+
+                                        <button
+                                            type="submit"
+                                            class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700"
+                                        >
+                                            Mark Resolved
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+
+                            @if ($item->followUps->count() > 0)
+                                <div class="mt-4 space-y-2">
+                                    <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                        Follow-up History
+                                    </div>
+
+                                    @foreach ($item->followUps as $followUp)
+                                        <div class="rounded-xl bg-slate-50 p-3 text-sm">
+                                            <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                                                <div class="font-medium text-slate-900">
+                                                    {{ $followUp->message }}
+                                                </div>
+
+                                                <span class="w-fit rounded-full bg-slate-200 px-3 py-1 text-xs font-medium text-slate-700">
+                                                    {{ $followUp->statusLabel() }}
+                                                </span>
+                                            </div>
+
+                                            <div class="mt-2 text-xs text-slate-500">
+                                                Requested
+                                                @if ($followUp->requested_by)
+                                                    by {{ $followUp->requested_by }}
+                                                @endif
+
+                                                @if ($followUp->requested_at)
+                                                    on {{ $followUp->requested_at->format('d M Y, g:i A') }}
+                                                @endif
+
+                                                @if ($followUp->due_at)
+                                                    · Due {{ $followUp->due_at->format('d M Y') }}
+                                                @endif
+                                            </div>
+
+                                            @if ($followUp->resolved_at)
+                                                <div class="mt-1 text-xs text-emerald-700">
+                                                    Resolved
+                                                    @if ($followUp->resolved_by)
+                                                        by {{ $followUp->resolved_by }}
+                                                    @endif
+
+                                                    @if ($followUp->resolved_at)
+                                                        on {{ $followUp->resolved_at->format('d M Y, g:i A') }}
+                                                    @endif
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            @if (! $item->resolved)
+                                <form
+                                    method="POST"
+                                    action="{{ route('admin.onboarding.invites.missing-info.follow-ups.store', [$invite, $item]) }}"
+                                    class="mt-4 rounded-xl bg-slate-50 p-4"
+                                >
+                                    @csrf
+
+                                    <div class="grid gap-3 lg:grid-cols-[1fr_180px_auto] lg:items-end">
+                                        <div>
+                                            <label class="text-sm font-medium text-slate-700">
+                                                Follow-up Message
+                                            </label>
+
+                                            <textarea
+                                                name="message"
+                                                rows="2"
+                                                class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                                placeholder="Example: Please provide your emergency contact phone number."
+                                                required
+                                            ></textarea>
+                                        </div>
+
+                                        <div>
+                                            <label class="text-sm font-medium text-slate-700">
+                                                Due Date
+                                            </label>
+
+                                            <input
+                                                type="date"
+                                                name="due_at"
+                                                class="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                                            >
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700"
+                                        >
+                                            Add Follow-up
+                                        </button>
+                                    </div>
+                                </form>
+                            @endif
+                        </div>
+                    @endforeach
                 </div>
             </section>
         @endif

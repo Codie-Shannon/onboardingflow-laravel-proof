@@ -32,6 +32,12 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('/invites/{invite}/document-requirements/{requirement}/status', [OnboardingInviteController::class, 'updateDocumentRequirementStatus'])
             ->name('invites.document-requirements.update-status');
 
+        Route::post('/invites/{invite}/missing-info/{item}/follow-ups', [OnboardingInviteController::class, 'storeMissingInfoFollowUp'])
+            ->name('invites.missing-info.follow-ups.store');
+        
+        Route::post('/invites/{invite}/missing-info/{item}/resolve', [OnboardingInviteController::class, 'resolveMissingInfoItem'])
+            ->name('invites.missing-info.resolve');
+
         Route::post('/invites/{invite}/status', [OnboardingInviteController::class, 'updateStatus'])
             ->name('invites.update-status');
 
