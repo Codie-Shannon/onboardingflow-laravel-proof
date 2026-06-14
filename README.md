@@ -27,57 +27,65 @@ The purpose of the proof is to make the workflow easier to review visually befor
 
 ---
 
+## Video Walkthrough
+
+A full walkthrough video is available here:
+
+[OnboardingFlow Proof-of-Concept Walkthrough](https://youtu.be/M92PTiP4-58)
+
+The walkthrough demonstrates the full sample workflow, including invite tracking, public submission, SharePoint document uploads, reviewer checks, missing-information follow-up, applicant resubmission, activity history, and reporting.
+
+---
+
 ## Screenshots
 
-Place screenshots in:
+Screenshots are stored in:
 
 ```text
 docs/screenshots/
 ```
 
-The README embeds the expected screenshot filenames below. Once the files are added with these names, GitHub will display them automatically.
-
-### 01 — Dashboard
+### Dashboard
 
 ![Dashboard](docs/screenshots/01-dashboard.png)
 
-### 02 — Invite List
+### Invite List
 
 ![Invite List](docs/screenshots/02-invite-list.png)
 
-### 03 — Invite Detail / Review Workflow
+### Invite Detail / Review Workflow
 
 ![Invite Detail Review](docs/screenshots/03-invite-detail-review.png)
 
-### 04 — Public Onboarding Form
+### Public Onboarding Form
 
 ![Public Onboarding Form](docs/screenshots/04-public-onboarding-form.png)
 
-### 05 — SharePoint Uploaded Documents
+### SharePoint Uploaded Documents
 
 ![SharePoint Uploaded Documents](docs/screenshots/05-sharepoint-uploaded-documents.png)
 
-### 06 — Document Review
+### Document Review
 
 ![Document Review](docs/screenshots/06-document-review.png)
 
-### 07 — Needs Info Email Preview
+### Needs Info Email Preview
 
 ![Needs Info Email Preview](docs/screenshots/07-needs-info-email-preview.png)
 
-### 08 — Public Resubmission Form
+### Public Resubmission Form
 
 ![Public Resubmission Form](docs/screenshots/08-public-resubmission-form.png)
 
-### 09 — Reports
+### Reports
 
 ![Reports](docs/screenshots/09-reports.png)
 
-### 10 — Activity Log
+### Activity Log
 
 ![Activity Log](docs/screenshots/10-activity-log.png)
 
-### 11 — Role Display
+### Role Display
 
 ![Role Display](docs/screenshots/11-role-display.png)
 
@@ -114,6 +122,18 @@ The README embeds the expected screenshot filenames below. Once the files are ad
 - Microsoft Graph
 - Outlook email sending
 - SharePoint document storage
+
+---
+
+## Local Development Environment
+
+This proof-of-concept was developed locally using **Laragon** rather than Docker or Lando.
+
+Laragon was chosen because the goal was to build and validate the workflow quickly on a local Windows development machine, with minimal environment overhead. It provided a fast Laravel/PHP/MySQL setup without needing container configuration, Docker networking, volume setup, or additional local orchestration.
+
+Docker or Lando would still be valid options for a longer-term team project or production-like development environment. For this proof, Laragon was the faster choice because the priority was validating the business workflow, Microsoft Graph integration, SharePoint uploads, reviewer flow, and demo packaging within a short timeframe.
+
+For a real pilot or production deployment, the hosting and development environment should be reviewed separately.
 
 ---
 
@@ -326,31 +346,31 @@ It demonstrates a possible workflow direction for tracked onboarding invites, ap
 
 ### Working in the Proof
 
-| Area | Proof Status |
-|---|---|
-| Invites | Template-based invites are working |
-| Applicant form | Public onboarding form is working |
-| Documents | Required document tracking is working |
-| SharePoint uploads | Files upload to SharePoint through Microsoft Graph |
-| Review checklist | Reviewer checklist is working |
-| Missing info | Missing-information follow-up and resubmission flow is working |
-| Roles | Admin, Reviewer, and Read-only roles are working |
-| Email | Microsoft Graph invite and needs-info emails are working internally |
-| Reports | Reports page and CSV export are working |
-| Activity log | Workflow actions are logged with actor attribution |
+| Area               | Proof Status                                                        |
+| ------------------ | ------------------------------------------------------------------- |
+| Invites            | Template-based invites are working                                  |
+| Applicant form     | Public onboarding form is working                                   |
+| Documents          | Required document tracking is working                               |
+| SharePoint uploads | Files upload to SharePoint through Microsoft Graph                  |
+| Review checklist   | Reviewer checklist is working                                       |
+| Missing info       | Missing-information follow-up and resubmission flow is working      |
+| Roles              | Admin, Reviewer, and Read-only roles are working                    |
+| Email              | Microsoft Graph invite and needs-info emails are working internally |
+| Reports            | Reports page and CSV export are working                             |
+| Activity log       | Workflow actions are logged with actor attribution                  |
 
 ### Proof vs Production
 
-| Area | Proof Status | Production Requirement |
-|---|---|---|
-| Email | Microsoft Graph works internally | Production tenant/domain deliverability review |
-| Documents | SharePoint upload works | Retention, permissions, malware scanning, file policy |
-| Auth | Local demo users | Organisation login / SSO / access policy |
-| Data | Sample data | Approved real data model |
-| Deployment | Local Laravel app | Hosted environment, backups, monitoring |
-| Secrets | Local `.env` | Secure secrets management |
-| Audit | Activity log proof | Formal audit retention policy |
-| Privacy | Sample data only | Privacy review and data handling policy |
+| Area       | Proof Status                     | Production Requirement                                |
+| ---------- | -------------------------------- | ----------------------------------------------------- |
+| Email      | Microsoft Graph works internally | Production tenant/domain deliverability review        |
+| Documents  | SharePoint upload works          | Retention, permissions, malware scanning, file policy |
+| Auth       | Local demo users                 | Organisation login / SSO / access policy              |
+| Data       | Sample data                      | Approved real data model                              |
+| Deployment | Local Laravel app                | Hosted environment, backups, monitoring               |
+| Secrets    | Local `.env`                     | Secure secrets management                             |
+| Audit      | Activity log proof               | Formal audit retention policy                         |
+| Privacy    | Sample data only                 | Privacy review and data handling policy               |
 
 ### Not Production-Ready Yet
 
@@ -416,82 +436,84 @@ A possible pilot path would be:
 
 ## Manual QA Checklist
 
+The following manual QA checks were performed against the proof-of-concept demo workflow.
+
 ### Admin
 
-- [ ] Can log in as admin
-- [ ] Can view dashboard
-- [ ] Can create onboarding template
-- [ ] Can create onboarding invite
-- [ ] Can preview invite email
-- [ ] Can send invite email through Microsoft Graph
-- [ ] Can view invite details
-- [ ] Can update invite status
-- [ ] Can add internal notes
-- [ ] Can update review checklist
-- [ ] Can update document requirement status
-- [ ] Can view reports
-- [ ] Can export CSV
+- [x] Can log in as admin
+- [x] Can view dashboard
+- [x] Can create onboarding template
+- [x] Can create onboarding invite
+- [x] Can preview invite email
+- [x] Can send invite email through Microsoft Graph
+- [x] Can view invite details
+- [x] Can update invite status
+- [x] Can add internal notes
+- [x] Can update review checklist
+- [x] Can update document requirement status
+- [x] Can view reports
+- [x] Can export CSV
 
 ### Applicant
 
-- [ ] Can open public onboarding link
-- [ ] Can view invite details
-- [ ] Can submit onboarding form
-- [ ] Can upload required documents
-- [ ] Uploaded documents appear in SharePoint
-- [ ] Can reopen same link when invite is marked Needs Info
-- [ ] Can update missing information
-- [ ] Can upload missing documents
-- [ ] Resubmission returns invite to In Review
+- [x] Can open public onboarding link
+- [x] Can view invite details
+- [x] Can submit onboarding form
+- [x] Can upload required documents
+- [x] Uploaded documents appear in SharePoint
+- [x] Can reopen same link when invite is marked Needs Info
+- [x] Can update missing information
+- [x] Can upload missing documents
+- [x] Resubmission returns invite to In Review
 
 ### Reviewer
 
-- [ ] Can log in as reviewer
-- [ ] Can view dashboard
-- [ ] Can view invites
-- [ ] Can update review checklist
-- [ ] Can mark documents Provided / Reviewed / Missing / Not Required
-- [ ] Can add missing-information follow-up
-- [ ] Can send needs-info email
-- [ ] Can add internal notes
-- [ ] Can export CSV
-- [ ] Cannot create invite
-- [ ] Cannot create template
-- [ ] Cannot send original invite email
+- [x] Can log in as reviewer
+- [x] Can view dashboard
+- [x] Can view invites
+- [x] Can update review checklist
+- [x] Can mark documents Provided / Reviewed / Missing / Not Required
+- [x] Can add missing-information follow-up
+- [x] Can send needs-info email
+- [x] Can add internal notes
+- [x] Can export CSV
+- [x] Cannot create invite
+- [x] Cannot create template
+- [x] Cannot send original invite email
 
 ### Read-only
 
-- [ ] Can log in as read-only
-- [ ] Can view dashboard
-- [ ] Can view invite details
-- [ ] Can view templates
-- [ ] Can view reports
-- [ ] Can view activity log
-- [ ] Cannot create invite
-- [ ] Cannot create template
-- [ ] Cannot send emails
-- [ ] Cannot update review checklist
-- [ ] Cannot update document status
-- [ ] Cannot add notes
-- [ ] Cannot export CSV
+- [x] Can log in as read-only
+- [x] Can view dashboard
+- [x] Can view invite details
+- [x] Can view templates
+- [x] Can view reports
+- [x] Can view activity log
+- [x] Cannot create invite
+- [x] Cannot create template
+- [x] Cannot send emails
+- [x] Cannot update review checklist
+- [x] Cannot update document status
+- [x] Cannot add notes
+- [x] Cannot export CSV
 
 ### Microsoft 365
 
-- [ ] Invite email sends internally through Microsoft Graph
-- [ ] Needs-info email sends internally through Microsoft Graph
-- [ ] Uploaded files appear in SharePoint
-- [ ] SharePoint file links open from admin invite detail
-- [ ] External personal Outlook delivery limitation documented
+- [x] Invite email sends internally through Microsoft Graph
+- [x] Needs-info email sends internally through Microsoft Graph
+- [x] Uploaded files appear in SharePoint
+- [x] SharePoint file links open from admin invite detail
+- [x] External personal Outlook delivery limitation documented
 
 ### Activity Log
 
-- [ ] Invite creation is logged
-- [ ] Applicant form opened is logged
-- [ ] Applicant submission is logged
-- [ ] Document upload is logged
-- [ ] Reviewer actions show reviewer name
-- [ ] Needs-info email send is logged
-- [ ] Applicant resubmission is logged
+- [x] Invite creation is logged
+- [x] Applicant form opened is logged
+- [x] Applicant submission is logged
+- [x] Document upload is logged
+- [x] Reviewer actions show reviewer name
+- [x] Needs-info email send is logged
+- [x] Applicant resubmission is logged
 
 ---
 
@@ -509,18 +531,6 @@ Recommended length: 5 to 13 minutes depending on whether it is a quick overview 
 - No code explanation required
 - No secrets or private tabs visible
 
-### Opening Script
-
-```text
-Hi Vanessa, this is a separate proof-of-concept using sample data. It is not connected to OSHE systems.
-
-I built it to make the onboarding workflow easier to review visually, based on the kind of process we discussed.
-
-It demonstrates tracked invites, a public onboarding form, document requirements, reviewer checks, missing-information follow-up, SharePoint-style document storage, reporting, and activity history.
-
-This is not production-ready yet, but it shows a possible workflow direction for review and discussion.
-```
-
 ### Demo Order
 
 1. Dashboard
@@ -536,21 +546,11 @@ This is not production-ready yet, but it shows a possible workflow direction for
 11. Reports
 12. Roles and access
 
-### Closing Script
-
-```text
-That is the main workflow.
-
-I kept this as a separate sample-data proof so it can be reviewed safely without touching any real OSHE systems.
-
-This is not production-ready yet, but it shows a possible workflow direction and what would need to be hardened for a real pilot.
-```
-
 ---
 
 ## Documentation
 
-The `docs` folder may also contain standalone versions of the project notes:
+The `docs` folder also contains standalone versions of the project notes:
 
 - `docs/project-summary.md`
 - `docs/demo-script.md`
@@ -561,6 +561,16 @@ The `docs` folder may also contain standalone versions of the project notes:
 - `docs/known-limitations.md`
 - `docs/pilot-next-steps.md`
 - `docs/screenshots/`
+
+---
+
+## Development Note
+
+This proof-of-concept was built with AI-assisted development support.
+
+AI was used to help accelerate code generation, documentation drafting, debugging, and demo packaging. The workflow direction, testing, integration decisions, review, and final implementation choices were guided and validated manually.
+
+This project should be reviewed as a proof-of-concept, not as production-ready software.
 
 ---
 
