@@ -125,15 +125,28 @@ docs/screenshots/
 
 ---
 
+## Development Tools
+
+- Laragon for fast local PHP/MySQL proof-of-concept development
+- Composer
+- npm / Vite
+- Cursor for AI-assisted code editing and project iteration
+- ChatGPT for planning, debugging support, documentation drafting, QA planning, demo review, and packaging
+- Git / GitHub for version control and project presentation
+
+---
+
 ## Local Development Environment
 
-This proof-of-concept was developed locally using **Laragon** rather than Docker or Lando.
+This proof-of-concept was built locally using **Laragon** to move quickly on a Windows development machine.
 
-Laragon was chosen because the goal was to build and validate the workflow quickly on a local Windows development machine, with minimal environment overhead. It provided a fast Laravel/PHP/MySQL setup without needing container configuration, Docker networking, volume setup, or additional local orchestration.
+Laragon was used for the proof because the priority was to rapidly validate the onboarding workflow, database structure, Microsoft Graph email flow, SharePoint document uploads, reviewer process, QA checklist, screenshots, and demo packaging.
 
-Docker or Lando would still be valid options for a longer-term team project or production-like development environment. For this proof, Laragon was the faster choice because the priority was validating the business workflow, Microsoft Graph integration, SharePoint uploads, reviewer flow, and demo packaging within a short timeframe.
+This does **not** mean Laragon would be the preferred environment for a real pilot or production project.
 
-For a real pilot or production deployment, the hosting and development environment should be reviewed separately.
+For a production-aligned setup, the environment should be reviewed against the organisation's existing stack, development standards, deployment process, hosting approach, and security requirements. Based on the stack previously described for the live environment, that may include Laravel/PHP, MySQL, Composer, npm, Git, React/JavaScript, Tailwind CSS, Lando, Docker, Linux hosting, and the organisation's existing hosting/security requirements.
+
+The proof should therefore be read as a workflow and technical direction prototype, not as a production deployment model.
 
 ---
 
@@ -566,11 +579,13 @@ The `docs` folder also contains standalone versions of the project notes:
 
 ## Development Note
 
-This proof-of-concept was built with AI-assisted development support.
+This proof-of-concept was built with AI-assisted development support using Cursor and ChatGPT.
 
-AI was used to help accelerate code generation, documentation drafting, debugging, and demo packaging. The workflow direction, testing, integration decisions, review, and final implementation choices were guided and validated manually.
+Cursor was used as the AI-assisted code editing environment to apply, review, and iterate on changes inside the Laravel project. ChatGPT was used to help plan the workflow, generate and refine code, debug issues, draft documentation, prepare QA checklists, review demo flow, and package the project for presentation.
 
-This project should be reviewed as a proof-of-concept, not as production-ready software.
+The workflow direction, business logic, testing, integration decisions, review, and final implementation choices were manually guided and validated.
+
+Because the real application environment would involve production users, security, hosting, deployment processes, and existing development standards, this project should be reviewed as a proof-of-concept only, not as production-ready software.
 
 ---
 
